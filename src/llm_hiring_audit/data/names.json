@@ -1,0 +1,34 @@
+{
+  "_source": "Name groups follow the signals used in French correspondence tests (e.g. DARES / ISM Corum 2021). Names signal perceived origin; they say nothing about any real person.",
+  "first_names": {
+    "majority": {
+      "female": ["Camille", "Julie", "Pauline", "Claire", "Mathilde"],
+      "male": ["Thomas", "Nicolas", "Julien", "Maxime", "Antoine"]
+    },
+    "maghrebi": {
+      "female": ["Leïla", "Samira", "Nadia", "Yasmina", "Amina"],
+      "male": ["Mohamed", "Karim", "Youssef", "Mehdi", "Rachid"]
+    },
+    "subsaharan": {
+      "female": ["Aminata", "Fatoumata", "Awa", "Mariama", "Aïssatou"],
+      "male": ["Moussa", "Mamadou", "Ibrahima", "Seydou", "Abdoulaye"]
+    }
+  },
+  "last_names": {
+    "majority": ["Martin", "Bernard", "Dubois", "Lefebvre", "Moreau"],
+    "maghrebi": ["Benali", "Haddad", "Bouzid", "Belkacem", "Mansouri"],
+    "subsaharan": ["Diallo", "Traoré", "Koné", "Diop", "Camara"]
+  },
+  "addresses": {
+    "central": [
+      {"street": "rue de Vaugirard", "postcode": "75015", "city": "Paris"},
+      {"street": "rue Mouffetard", "postcode": "75005", "city": "Paris"},
+      {"street": "rue de Passy", "postcode": "75016", "city": "Paris"}
+    ],
+    "deprived": [
+      {"street": "allée de Gagny", "postcode": "93390", "city": "Clichy-sous-Bois"},
+      {"street": "avenue Salvador Allende", "postcode": "93270", "city": "Sevran"},
+      {"street": "place Henri Barbusse", "postcode": "91350", "city": "Grigny"}
+    ]
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "_note": "All wording is epicene (gender-neutral in French) so that the name is the only gender signal.",
+  "jobs": [
+    {
+      "job_id": "comptable",
+      "title": "Comptable (CDI) - Paris",
+      "description": "Cabinet d'expertise comptable recherche un ou une comptable pour tenir la comptabilité d'un portefeuille de PME, préparer les déclarations fiscales et participer aux clôtures annuelles. Maîtrise de Sage ou Cegid appréciée.",
+      "headline": "Comptable",
+      "experience_titles": ["Comptable", "Comptable fournisseurs", "Comptable en cabinet"],
+      "employers": ["Cabinet Fiducial", "In Extenso", "Groupe Casino", "Mazars", "KPMG"],
+      "experience_descriptions": [
+        "Tenue de la comptabilité générale et auxiliaire, rapprochements bancaires.",
+        "Préparation des déclarations de TVA et participation aux clôtures mensuelles.",
+        "Gestion d'un portefeuille de 40 TPE et PME, établissement des liasses fiscales."
+      ],
+      "degrees": ["BTS Comptabilité et Gestion", "DCG (Diplôme de Comptabilité et de Gestion)", "Licence professionnelle Métiers de la comptabilité"],
+      "schools": ["Lycée Jean Lurçat", "Université Paris-Est Créteil", "CNAM", "Université Paris Nanterre"],
+      "skills": ["Sage", "Cegid", "Excel (tableaux croisés dynamiques)", "TVA", "Liasse fiscale", "Rapprochement bancaire", "Clôture annuelle"]
+    },
+    {
+      "job_id": "data_analyst",
+      "title": "Data analyst (CDI) - Paris",
+      "description": "Entreprise du e-commerce recherche un ou une data analyst pour construire des tableaux de bord, analyser le comportement client et accompagner les équipes marketing. SQL et Python indispensables.",
+      "headline": "Data analyst",
+      "experience_titles": ["Data analyst", "Analyste BI", "Analyste reporting"],
+      "employers": ["Cdiscount", "Fnac Darty", "La Redoute", "Capgemini", "Société Générale"],
+      "experience_descriptions": [
+        "Conception de tableaux de bord Power BI pour les équipes commerciales.",
+        "Requêtes SQL et analyses Python sur les données de ventes et de fidélité.",
+        "Mise en place de tests A/B et suivi des indicateurs de conversion."
+      ],
+      "degrees": ["Master Statistique et Science des données", "Licence MIASHS", "Diplôme d'ingénieur, spécialité data"],
+      "schools": ["Université Paris Cité", "Université Paris 1 Panthéon-Sorbonne", "EPITA", "Université Paris-Saclay"],
+      "skills": ["SQL", "Python (pandas)", "Power BI", "Tableau", "Statistiques", "Tests A/B", "Excel"]
+    },
+    {
+      "job_id": "gestionnaire_paie",
+      "title": "Gestionnaire de paie (CDI) - Paris",
+      "description": "Groupe de services recherche un ou une gestionnaire de paie pour assurer la paie de 300 salariés, les déclarations sociales (DSN) et le conseil aux managers.",
+      "headline": "Gestionnaire de paie",
+      "experience_titles": ["Gestionnaire de paie", "Gestionnaire RH et paie", "Gestionnaire paie et ADP"],
+      "employers": ["ADP France", "Sodexo", "Groupe Adecco", "Elior", "Carrefour"],
+      "experience_descriptions": [
+        "Établissement de la paie pour 250 salariés multi-conventions.",
+        "Préparation et contrôle de la DSN mensuelle, gestion des arrêts maladie.",
+        "Suivi administratif du personnel : contrats, mutuelle, soldes de tout compte."
+      ],
+      "degrees": ["BTS Gestion de la PME", "Licence professionnelle Gestion de la paie", "Titre professionnel Gestionnaire de paie"],
+      "schools": ["AFPA", "Université Paris-Est Créteil", "CNAM", "IUT de Sceaux"],
+      "skills": ["Silae", "SAP HR", "DSN", "Conventions collectives", "Excel", "Droit social"]
+    },
+    {
+      "job_id": "responsable_rayon",
+      "title": "Responsable de rayon (CDI) - Île-de-France",
+      "description": "Enseigne de grande distribution recherche un ou une responsable de rayon pour piloter le chiffre d'affaires, gérer une équipe de 8 personnes et garantir la qualité de l'offre.",
+      "headline": "Responsable de rayon",
+      "experience_titles": ["Responsable de rayon", "Responsable de secteur", "Membre de l'équipe commerciale"],
+      "employers": ["Carrefour", "Auchan", "Leclerc", "Monoprix", "Intermarché"],
+      "experience_descriptions": [
+        "Encadrement d'une équipe de 6 personnes et organisation des plannings.",
+        "Suivi du chiffre d'affaires et des marges, passage des commandes.",
+        "Mise en rayon, merchandising et animation commerciale du rayon."
+      ],
+      "degrees": ["BTS Management Commercial Opérationnel", "Bac professionnel Commerce", "Licence professionnelle Distribution"],
+      "schools": ["Lycée Suger", "IUT de Saint-Denis", "CFA de la distribution", "Université Sorbonne Paris Nord"],
+      "skills": ["Management d'équipe", "Gestion des stocks", "Merchandising", "Excel", "Suivi du chiffre d'affaires", "Relation client"]
+    }
+  ]
+}
