@@ -15,11 +15,17 @@ from llm_hiring_audit.scoring import Scorer, parse_score, read_jsonl
     ("answer", "expected"),
     [
         ("72", 72),
+        ("**88**", 88),
         ("Note : 85/100", 85),
         ("Je donnerais 100.", 100),
         ("0 puis 64", 64),
+        ("Sur une échelle de 1 à 100, je donne 72.", 72),
+        ("De 1 (très improbable) à 100 : 40", 40),
+        ("Entre 60 et 70", None),
+        ("72 ou 80", None),
         ("Je ne peux pas évaluer ce CV.", None),
         ("250", None),
+        ("250/100", None),
         ("", None),
     ],
 )

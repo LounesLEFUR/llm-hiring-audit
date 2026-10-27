@@ -25,15 +25,24 @@ from llm_hiring_audit.generator import load_job_postings
 from llm_hiring_audit.prompts import PROMPTS
 
 _NUMBER = re.compile(r"\d{1,3}")
+# "de 1 à 100", "entre 60 et 70", "de 1 (très improbable) à 100"
+_RANGE = re.compile(r"\d{1,3}\s*(?:\([^)]*\)\s*)?(?:à|-|et)\s*\d{1,3}")
+_OUT_OF_100 = re.compile(r"(\d{1,3})\s*/\s*100")
 
 
 def parse_score(answer: str) -> int | None:
-    """Return the first integer in [1, 100] found in the answer, if any."""
-    for match in _NUMBER.finditer(answer):
-        value = int(match.group())
-        if 1 <= value <= 100:
-            return value
-    return None
+    """Extract the score from a model answer, or None if it is missing or ambiguous.
+
+    Taking "the first number" would read "sur une échelle de 1 à 100, je
+    donne 72" as 1, so ranges are removed first, "N/100" wins, and an answer
+    with several candidate numbers is rejected rather than guessed.
+    """
+    if match := _OUT_OF_100.search(answer):
+        value = int(match.group(1))
+        return value if 1 <= value <= 100 else None
+    candidates = {int(m) for m in _NUMBER.findall(_RANGE.sub(" ", answer))}
+    candidates = {v for v in candidates if 1 <= v <= 100}
+    return candidates.pop() if len(candidates) == 1 else None
 
 
 class ScoreRecord(BaseModel):
