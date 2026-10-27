@@ -5,12 +5,14 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
+import pandas as pd
 import typer
 
+from llm_hiring_audit.analysis import analyze as run_analysis
 from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
 from llm_hiring_audit.generator import CVGenerator
 from llm_hiring_audit.prompts import PROMPTS
-from llm_hiring_audit.render import render_cv
+from llm_hiring_audit.render import cv_to_record
 from llm_hiring_audit.scoring import Scorer, read_jsonl
 
 app = typer.Typer(help="Statistical audit of LLMs used to screen French CVs.")
@@ -34,17 +36,7 @@ def generate(
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", encoding="utf-8") as f:
         for cv in cvs:
-            record = {
-                "cv_id": cv.cv_id,
-                "profile_id": cv.profile.profile_id,
-                "job_id": cv.profile.job_id,
-                "gender": cv.treatment.gender,
-                "origin": cv.treatment.origin,
-                "address_area": cv.treatment.address_area,
-                "name_index": cv.name_index,
-                "text": render_cv(cv),
-            }
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            f.write(json.dumps(cv_to_record(cv), ensure_ascii=False) + "\n")
     typer.echo(f"Wrote {len(cvs)} CVs to {out}")
 
 
@@ -102,3 +94,43 @@ def score(
     records = read_jsonl(cvs)[:limit]
     n = scorer.run(records, out)
     typer.echo(f"Scored {n} new queries into {out}")
+
+
+@app.command()
+def analyze(
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    n_boot: Annotated[int, typer.Option(min=0, help="Bootstrap resamples (0 = skip).")] = 500,
+    seed: int = 0,
+    out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
+) -> None:
+    """Estimate discrimination effects for each model in the scores file."""
+    data = pd.DataFrame(read_jsonl(scores))
+    for report in run_analysis(data, n_boot=n_boot, seed=seed):
+        dist = report.distribution
+        typer.echo(f"\n=== {report.model} ===")
+        typer.echo(
+            f"{int(dist['n'])} valid scores, mean {dist['mean']:.1f}, sd {dist['std']:.1f}, "
+            f"{dist['share_at_or_above_ceiling']:.0%} at 90 or above"
+        )
+        typer.echo("\nEffects in score points (95% CI; p-values Holm-corrected):")
+        columns = [c for c in EFFECT_COLUMNS if c in report.effects]
+        typer.echo(report.effects[columns].round(3).to_string(index=False))
+        typer.echo("\nRefusal / unparseable rate:")
+        typer.echo(report.refusals.round(3).to_string(index=False))
+        if out_dir:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            slug = report.model.replace("/", "_")
+            report.effects.to_csv(out_dir / f"effects_{slug}.csv", index=False)
+            report.refusals.to_csv(out_dir / f"refusals_{slug}.csv", index=False)
+
+
+EFFECT_COLUMNS = [
+    "label",
+    "estimate",
+    "ci_low",
+    "ci_high",
+    "p_holm",
+    "significant",
+    "boot_ci_low",
+    "boot_ci_high",
+]

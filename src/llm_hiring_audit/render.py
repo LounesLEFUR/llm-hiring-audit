@@ -1,6 +1,25 @@
 """Rendering of a CV as the plain French text an LLM screener would read."""
 
+from typing import Any
+
 from llm_hiring_audit.models import CV
+
+
+def cv_to_record(cv: CV) -> dict[str, Any]:
+    """Flat record written to the CV file: design variables plus the text."""
+    return {
+        "cv_id": cv.cv_id,
+        "profile_id": cv.profile.profile_id,
+        "job_id": cv.profile.job_id,
+        "gender": cv.treatment.gender,
+        "origin": cv.treatment.origin,
+        "address_area": cv.treatment.address_area,
+        "name_index": cv.name_index,
+        "first_name": cv.identity.first_name,
+        "last_name": cv.identity.last_name,
+        "city": cv.identity.city,
+        "text": render_cv(cv),
+    }
 
 
 def render_cv(cv: CV) -> str:

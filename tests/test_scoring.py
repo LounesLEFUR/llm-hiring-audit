@@ -7,7 +7,7 @@ import pytest
 
 from llm_hiring_audit.backends import MockBackend
 from llm_hiring_audit.generator import CVGenerator
-from llm_hiring_audit.render import render_cv
+from llm_hiring_audit.render import cv_to_record
 from llm_hiring_audit.scoring import Scorer, parse_score, read_jsonl
 
 
@@ -34,19 +34,7 @@ def test_parse_score(answer: str, expected: int | None) -> None:
 
 
 def _cv_records(n_profiles: int = 1) -> list[dict[str, Any]]:
-    return [
-        {
-            "cv_id": cv.cv_id,
-            "profile_id": cv.profile.profile_id,
-            "job_id": cv.profile.job_id,
-            "gender": cv.treatment.gender,
-            "origin": cv.treatment.origin,
-            "address_area": cv.treatment.address_area,
-            "name_index": cv.name_index,
-            "text": render_cv(cv),
-        }
-        for cv in CVGenerator(seed=0, names_per_cell=1).generate(n_profiles)
-    ]
+    return [cv_to_record(cv) for cv in CVGenerator(seed=0, names_per_cell=1).generate(n_profiles)]
 
 
 def test_run_scores_every_query(tmp_path: Path) -> None:

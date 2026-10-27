@@ -7,8 +7,8 @@ by human recruiters: the **correspondence audit study** (Bertrand & Mullainathan
 in France, the DARES / ISM Corum testing campaigns). We send a model CVs that are
 identical except for the candidate's name and address, and test whether its scores differ.
 
-> Status: work in progress. CV generation and model scoring are done; the statistical
-> analysis is next.
+> Status: work in progress. The full pipeline (generation, scoring, analysis) works and is
+> validated on simulated data; audits of real models are next.
 
 ## Why it matters
 
@@ -71,6 +71,49 @@ calls. Queries are shuffled so that model drift during a long run cannot line up
 demographic group. Runs can be interrupted and resumed, and answers that contain no valid
 score are kept (`score: null`) so the refusal rate can be analysed too.
 
+## Statistical analysis
+
+```bash
+uv run llm-hiring-audit analyze --scores data/scores.jsonl --out-dir results/
+```
+
+For each model, the effect of each signal is estimated in score points with
+
+$$
+\text{score}_{i} = \beta_1\,\text{female}_i + \beta_2\,\text{maghrebi}_i + \beta_3\,\text{subsaharan}_i
++ \beta_4\,\text{deprived}_i + \alpha_{\text{profile}(i)} + \gamma_{\text{prompt}(i)} + \varepsilon_i
+$$
+
+- **Profile fixed effects** ($\alpha$) compare each CV only with the other versions of the
+  same profile, so differences in qualifications cannot contaminate the estimates.
+- **Prompt fixed effects** ($\gamma$) absorb level differences between the three wordings.
+- **Standard errors clustered by name**: all scores of one name share that name's own
+  effect, so treating them as independent would make confidence intervals too narrow.
+- **Cluster bootstrap over profiles** gives a second confidence interval that does not rely
+  on the regression's distributional assumptions.
+- **Holm correction** controls the family-wise error rate across the effects tested together.
+- **Refusal rates** by group are tested with a chi-square test, since refusing to score some
+  candidates more often is itself a form of unequal treatment.
+- **Ceiling check**: the share of scores at 90 or above, since a compressed scale can hide
+  real differences.
+
+### Validation on a model with a known bias
+
+Before trusting the analysis on real models, it is run on a mock model with planted
+penalties: −6 points for Maghrebi surnames and −4 points for one of the three deprived-area
+addresses (so about −1.33 on average for the deprived area). 480 CVs × 3 prompts:
+
+| Effect | Truth | Estimate [95% CI] | Significant (Holm) |
+|---|---|---|---|
+| Maghrebi-sounding name | −6 | −5.52 [−6.19, −4.85] | yes |
+| Deprived-area address | ≈ −1.33 | −1.60 [−2.18, −1.03] | yes |
+| Female | 0 | −0.35 [−0.90, 0.19] | no |
+| Sub-Saharan-sounding name | 0 | −0.02 [−0.69, 0.65] | no |
+
+Both planted effects are detected with the truth inside the interval, and no effect is
+found where none was planted. These properties are checked automatically in
+`tests/test_analysis.py`.
+
 ## Development
 
 ```bash
@@ -84,9 +127,11 @@ uv run mypy src tests  # strict type checking
 - [x] Matched CV generator (factorial design)
 - [x] Model backends: local models (Ollama) and Mistral API, with mocked tests
 - [x] Three prompt wordings
-- [ ] Analysis: mixed-effects regression, bootstrap confidence intervals, multiple-testing
-      correction, power analysis
-- [ ] Validation: recover a planted bias from the mock model
+- [x] Analysis: fixed-effects regression with name-clustered errors, cluster bootstrap,
+      Holm correction, refusal rates, ceiling check
+- [x] Validation: recover a planted bias from the mock model
+- [ ] Power analysis: how many CVs are needed to detect a given effect
+- [ ] Audits of real models (Mistral 7B local, open-mistral-nemo, ministral-8b)
 - [ ] Results report and write-up
 
 ## Related work
@@ -94,8 +139,8 @@ uv run mypy src tests  # strict type checking
 - Bertrand & Mullainathan (2004), *Are Emily and Greg More Employable than Lakisha and
   Jamal?* The original correspondence study of hiring discrimination.
 - Armstrong et al. (2024), [*The Silicon Ceiling: Auditing GPT's Race and Gender Biases in
-  Hiring*](https://arxiv.org/abs/2405.04412). Inspired the three prompt wordings and the
-  mixed-effects model with a random effect for names.
+  Hiring*](https://arxiv.org/abs/2405.04412). Inspired the three prompt wordings; they model
+  name-level variation with a random effect, which this project handles by clustering.
 - Wilson & Caliskan (2024), [*Gender, Race, and Intersectional Bias in Resume Screening via
   Language Model Retrieval*](https://arxiv.org/abs/2407.20371).
 - Tamkin et al. (2023), [*Evaluating and Mitigating Discrimination in Language Model

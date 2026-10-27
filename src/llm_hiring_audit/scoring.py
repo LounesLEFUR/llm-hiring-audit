@@ -53,6 +53,9 @@ class ScoreRecord(BaseModel):
     origin: str
     address_area: str
     name_index: int
+    first_name: str
+    last_name: str
+    city: str
     model: str
     prompt_id: str
     repetition: int
@@ -124,6 +127,9 @@ class Scorer:
             origin=cv["origin"],
             address_area=cv["address_area"],
             name_index=cv["name_index"],
+            first_name=cv["first_name"],
+            last_name=cv["last_name"],
+            city=cv["city"],
             model=self.backend.name,
             prompt_id=prompt_id,
             repetition=rep,
