@@ -5,6 +5,7 @@ description = "Statistical correspondence audit of LLMs used to screen French CV
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "httpx>=0.28.1",
     "numpy>=2.5.4",
     "pandas>=3.1.0",
     "pydantic>=2.14.1",

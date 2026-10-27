@@ -1,13 +1,17 @@
 """Command-line interface: `llm-hiring-audit --help`."""
 
 import json
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
 from llm_hiring_audit.generator import CVGenerator
+from llm_hiring_audit.prompts import PROMPTS
 from llm_hiring_audit.render import render_cv
+from llm_hiring_audit.scoring import Scorer, read_jsonl
 
 app = typer.Typer(help="Statistical audit of LLMs used to screen French CVs.")
 
@@ -42,3 +46,59 @@ def generate(
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
     typer.echo(f"Wrote {len(cvs)} CVs to {out}")
+
+
+class BackendName(StrEnum):
+    MOCK = "mock"
+    OLLAMA = "ollama"
+    MISTRAL = "mistral"
+
+
+def _parse_penalties(items: list[str]) -> dict[str, float]:
+    penalties = {}
+    for item in items:
+        word, sep, value = item.rpartition("=")
+        if not sep or not word:
+            raise typer.BadParameter(f"Expected WORD=VALUE, got {item!r}")
+        penalties[word] = float(value)
+    return penalties
+
+
+def _make_backend(backend: BackendName, model: str, penalties: list[str]) -> LLMBackend:
+    match backend:
+        case BackendName.MOCK:
+            return MockBackend(penalties=_parse_penalties(penalties))
+        case BackendName.OLLAMA:
+            return OllamaBackend(model)
+        case BackendName.MISTRAL:
+            return MistralBackend(model)
+
+
+@app.command()
+def score(
+    backend: Annotated[BackendName, typer.Option(help="Which model provider to use.")],
+    model: Annotated[str, typer.Option(help="Model name, e.g. mistral-small-latest.")] = "",
+    cvs: Annotated[Path, typer.Option(help="CVs from `generate`.")] = Path("cvs.jsonl"),
+    out: Annotated[Path, typer.Option(help="Output JSONL (appended).")] = Path("scores.jsonl"),
+    prompt: Annotated[list[str] | None, typer.Option(help="Prompt id; repeatable.")] = None,
+    repetitions: Annotated[int, typer.Option(min=1)] = 3,
+    temperature: Annotated[float, typer.Option(min=0.0)] = 0.7,
+    seed: int = 0,
+    limit: Annotated[int | None, typer.Option(help="Only score the first N CVs.")] = None,
+    mock_penalty: Annotated[
+        list[str] | None, typer.Option(help="Mock only: WORD=POINTS, e.g. Sevran=-5.")
+    ] = None,
+) -> None:
+    """Ask a model to score every CV. Re-running resumes where it stopped."""
+    if backend is not BackendName.MOCK and not model:
+        raise typer.BadParameter("--model is required for real backends")
+    scorer = Scorer(
+        _make_backend(backend, model, mock_penalty or []),
+        prompt_ids=prompt or list(PROMPTS),
+        repetitions=repetitions,
+        temperature=temperature,
+        seed=seed,
+    )
+    records = read_jsonl(cvs)[:limit]
+    n = scorer.run(records, out)
+    typer.echo(f"Scored {n} new queries into {out}")
