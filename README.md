@@ -7,8 +7,37 @@ by human recruiters: the **correspondence audit study** (Bertrand & Mullainathan
 in France, the DARES / ISM Corum testing campaigns). We send a model CVs that are
 identical except for the candidate's name and address, and test whether its scores differ.
 
-> Status: work in progress. The full pipeline (generation, scoring, analysis) works and is
-> validated on simulated data; audits of real models are next.
+## Key results (October 2026)
+
+960 matched CVs × 3 prompt wordings = 2,880 scores per model, on a 1–100 scale. Effects are
+in score points relative to a male candidate with a majority French name living in central
+Paris, with profile and prompt fixed effects, name-clustered 95% confidence intervals, and
+Holm-corrected significance (\*).
+
+| Effect | Mistral 7B (local, Ollama) | open-mistral-nemo (Mistral API) |
+|---|---|---|
+| Female | **+2.43** [1.94, 2.92]\* | **+1.21** [0.80, 1.62]\* |
+| Maghrebi-sounding name | **−0.94** [−1.54, −0.35]\* | −0.16 [−0.69, 0.36] |
+| Sub-Saharan-sounding name | **−2.02** [−2.66, −1.39]\* | +0.01 [−0.51, 0.54] |
+| Deprived-area address | **−1.09** [−1.55, −0.63]\* | +0.21 [−0.22, 0.64] |
+| Unparseable answers | 0.5% (no group difference) | 0.1% (no group difference) |
+
+- **Two models from the same provider behave very differently.** Mistral 7B penalises
+  candidates with sub-Saharan-sounding names (−2.0 points), Maghrebi-sounding names
+  (−0.9) and a deprived-area address (−1.1). open-mistral-nemo shows none of these
+  penalties, and its intervals rule out penalties larger than about 0.7 points.
+- **Both models favour women**, by +2.4 and +1.2 points.
+- **The main effects hold across prompts and jobs.** For Mistral 7B, the sub-Saharan
+  penalty and the female premium are significant in each of the 3 prompt wordings and each
+  of the 4 jobs. For open-mistral-nemo, the female premium is significant in all 7 subsets.
+- Every result is confirmed by the cluster bootstrap (see
+  [`results/2026-10/`](results/2026-10/)), which also contains the raw scores needed to
+  reproduce the analysis.
+
+These gaps are small on a 100-point scale, but they are systematic: a screening tool that
+ranks or thresholds candidates turns a consistent 2-point gap into fewer shortlisted
+candidates from the penalised group. Results apply to these model versions, this prompt
+design and these four jobs. Models change, so audits should be re-run on each new version.
 
 ## Why it matters
 
@@ -170,7 +199,10 @@ uv run mypy src tests  # strict type checking
 - [x] Validation: recover a planted bias from the mock model
 - [x] Power analysis: how many CVs are needed to detect a given effect
 - [x] Larger name pool, checked against INSEE data
-- [ ] Audits of real models (Mistral 7B local, open-mistral-nemo, ministral-8b)
+- [x] Audits of real models: Mistral 7B (local) and open-mistral-nemo (API)
+- [ ] Robustness by prompt and job as a CLI command (currently a one-off check)
+- [ ] Intersectional effects (e.g. gender × origin)
+- [ ] More models (ministral-8b, other providers)
 - [ ] Results report and write-up
 
 ## Related work
