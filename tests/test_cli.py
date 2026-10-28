@@ -42,6 +42,18 @@ def test_analyze_prints_and_writes_tables(tmp_path: Path) -> None:
     assert (tmp_path / "effects_mock.csv").exists()
 
 
+def test_robustness_prints_and_writes_table(tmp_path: Path) -> None:
+    cvs, scores = tmp_path / "cvs.jsonl", tmp_path / "scores.jsonl"
+    runner = CliRunner()
+    runner.invoke(app, ["generate", "--out", str(cvs), "--profiles-per-job", "1"])
+    runner.invoke(app, ["score", "--backend", "mock", "--cvs", str(cvs), "--out", str(scores)])
+    args = ["robustness", "--scores", str(scores), "--out-dir", str(tmp_path)]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert "Holm correction across all rows" in result.output
+    assert (tmp_path / "subgroups_mock.csv").exists()
+
+
 def test_power_prints_table() -> None:
     args = ["power", "--residual-sd", "5", "--profiles-per-job", "1", "--n-sims", "3"]
     result = CliRunner().invoke(app, args)

@@ -82,6 +82,34 @@ def estimate_effects(df: pd.DataFrame, alpha: float = 0.05) -> pd.DataFrame:
     return table
 
 
+SUBGROUP_COLUMNS = ("prompt_id", "job_id")
+
+
+def subgroup_effects(
+    df: pd.DataFrame, by: tuple[str, ...] = SUBGROUP_COLUMNS, alpha: float = 0.05
+) -> pd.DataFrame:
+    """Re-estimate the effects within each prompt wording and each job.
+
+    Checks that a pooled result is not driven by a single prompt or job.
+    The Holm correction is applied across *all* subgroup tests at once:
+    with 7 subgroups x 4 effects = 28 tests, correcting within each
+    subgroup separately would let several false positives through.
+    """
+    unknown = set(by) - set(SUBGROUP_COLUMNS)
+    if unknown:
+        raise ValueError(f"Can only split by {SUBGROUP_COLUMNS}, got {sorted(unknown)}")
+    tables = []
+    for column in by:
+        for value, sub in df.groupby(column):
+            table = estimate_effects(sub, alpha=alpha).drop(columns=["p_holm", "significant"])
+            tables.append(table.assign(subgroup=column, value=str(value)))
+    result = pd.concat(tables, ignore_index=True)
+    result["p_holm"] = multipletests(result["p_value"], alpha=alpha, method="holm")[1]
+    result["significant"] = result["p_holm"] < alpha
+    columns = ["subgroup", "value", "effect", "estimate", "ci_low", "ci_high"]
+    return result[[*columns, "p_value", "p_holm", "significant"]]
+
+
 def bootstrap_effects(
     df: pd.DataFrame, n_boot: int = 500, seed: int = 0, alpha: float = 0.05
 ) -> pd.DataFrame:

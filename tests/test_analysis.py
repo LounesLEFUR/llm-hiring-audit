@@ -14,6 +14,7 @@ from llm_hiring_audit.analysis import (
     prepare,
     refusal_rates,
     score_distribution,
+    subgroup_effects,
 )
 from llm_hiring_audit.backends import MockBackend
 from llm_hiring_audit.generator import CVGenerator, _load_json
@@ -108,3 +109,31 @@ def test_analyze_reports_each_model(biased_scores: pd.DataFrame) -> None:
     reports = analyze(both, n_boot=10)
     assert [r.model for r in reports] == ["mock", "other"]
     assert {"boot_ci_low", "boot_ci_high"} <= set(reports[0].effects.columns)
+
+
+def test_subgroups_cover_every_prompt_and_job(biased_scores: pd.DataFrame) -> None:
+    table = subgroup_effects(prepare(biased_scores))
+    assert set(table["value"]) == set(biased_scores["prompt_id"]) | set(biased_scores["job_id"])
+    assert len(table) == (3 + 4) * 4  # 7 subgroups x 4 effects
+
+
+def test_planted_bias_holds_in_every_subgroup(biased_scores: pd.DataFrame) -> None:
+    table = subgroup_effects(prepare(biased_scores))
+    maghrebi = table[table["effect"] == "maghrebi"]
+    assert maghrebi["significant"].all()
+    # Each 95% interval misses the truth 5% of the time, so requiring all 7
+    # to cover it would fail about 30% of the time (1 - 0.95**7). At least 5
+    # of 7 happens with probability 0.996 when the method is correct.
+    covers = (maghrebi["ci_low"] <= TRUE_MAGHREBI) & (maghrebi["ci_high"] >= TRUE_MAGHREBI)
+    assert covers.sum() >= 5
+
+
+def test_subgroup_holm_covers_all_tests(fair_scores: pd.DataFrame) -> None:
+    table = subgroup_effects(prepare(fair_scores))
+    assert (table["p_holm"] >= table["p_value"]).all()
+    assert not table["significant"].any()
+
+
+def test_subgroup_rejects_unknown_column(fair_scores: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="Can only split"):
+        subgroup_effects(prepare(fair_scores), by=("city",))

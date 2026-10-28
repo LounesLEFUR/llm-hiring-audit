@@ -9,6 +9,7 @@ import pandas as pd
 import typer
 
 from llm_hiring_audit.analysis import analyze as run_analysis
+from llm_hiring_audit.analysis import prepare, subgroup_effects
 from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
 from llm_hiring_audit.generator import CVGenerator
 from llm_hiring_audit.power import Design, estimate_power
@@ -127,6 +128,23 @@ def analyze(
             slug = report.model.replace("/", "_")
             report.effects.to_csv(out_dir / f"effects_{slug}.csv", index=False)
             report.refusals.to_csv(out_dir / f"refusals_{slug}.csv", index=False)
+
+
+@app.command()
+def robustness(
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
+) -> None:
+    """Estimate the effects separately for each prompt wording and each job."""
+    data = pd.DataFrame(read_jsonl(scores))
+    for model, raw in data.groupby("model"):
+        table = subgroup_effects(prepare(raw))
+        typer.echo(f"\n=== {model} ===")
+        typer.echo("Effects by subgroup (Holm correction across all rows below):")
+        typer.echo(table.round(3).to_string(index=False))
+        if out_dir:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            table.to_csv(out_dir / f"subgroups_{str(model).replace('/', '_')}.csv", index=False)
 
 
 @app.command()

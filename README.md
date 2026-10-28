@@ -27,9 +27,14 @@ Holm-corrected significance (\*).
   (−0.9) and a deprived-area address (−1.1). open-mistral-nemo shows none of these
   penalties, and its intervals rule out penalties larger than about 0.7 points.
 - **Both models favour women**, by +2.4 and +1.2 points.
-- **The main effects hold across prompts and jobs.** For Mistral 7B, the sub-Saharan
-  penalty and the female premium are significant in each of the 3 prompt wordings and each
-  of the 4 jobs. For open-mistral-nemo, the female premium is significant in all 7 subsets.
+- **The main effects are not driven by one prompt or one job** (`llm-hiring-audit
+  robustness`, Holm correction across all 28 subgroup tests). For Mistral 7B, the female
+  premium is significant in all 7 subsets (3 prompt wordings, 4 jobs) and the sub-Saharan
+  penalty in 6 of 7 (in accounting it is −1.9 points, p = 0.07 after correction). For
+  open-mistral-nemo, the female premium is positive in all 7 subsets (+0.8 to +1.8) but
+  significant in only 3: a 1-point effect is too small to confirm within each subset alone.
+  One subset result runs against the pooled pattern (nemo, payroll jobs: deprived address
+  −1.15, significant); with 28 tests it is treated as exploratory.
 - Every result is confirmed by the cluster bootstrap (see
   [`results/2026-10/`](results/2026-10/)), which also contains the raw scores needed to
   reproduce the analysis.
@@ -104,7 +109,11 @@ score are kept (`score: null`) so the refusal rate can be analysed too.
 
 ```bash
 uv run llm-hiring-audit analyze --scores data/scores.jsonl --out-dir results/
+uv run llm-hiring-audit robustness --scores data/scores.jsonl --out-dir results/
 ```
+
+`robustness` re-estimates every effect within each prompt wording and each job, with the
+Holm correction applied across all subgroup tests together.
 
 For each model, the effect of each signal is estimated in score points with
 
@@ -200,7 +209,7 @@ uv run mypy src tests  # strict type checking
 - [x] Power analysis: how many CVs are needed to detect a given effect
 - [x] Larger name pool, checked against INSEE data
 - [x] Audits of real models: Mistral 7B (local) and open-mistral-nemo (API)
-- [ ] Robustness by prompt and job as a CLI command (currently a one-off check)
+- [x] Robustness by prompt and job (`robustness` command)
 - [ ] Intersectional effects (e.g. gender × origin)
 - [ ] More models (ministral-8b, other providers)
 - [ ] Results report and write-up
