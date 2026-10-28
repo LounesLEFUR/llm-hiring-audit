@@ -65,7 +65,9 @@ class CVGenerator:
 
     def __init__(self, seed: int = 0, names_per_cell: int = 2) -> None:
         names = _load_json("names.json")
-        max_names = min(len(v) for v in names["last_names"].values())
+        pools = [v for g in names["first_names"].values() for v in g.values()]
+        pools += list(names["last_names"].values())
+        max_names = min(len(pool) for pool in pools)
         if not 1 <= names_per_cell <= max_names:
             raise ValueError(f"names_per_cell must be between 1 and {max_names}")
         self._rng = np.random.default_rng(seed)

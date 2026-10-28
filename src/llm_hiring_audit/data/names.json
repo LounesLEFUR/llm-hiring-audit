@@ -1,23 +1,23 @@
 {
-  "_source": "Name groups follow the signals used in French correspondence tests (e.g. DARES / ISM Corum 2021). Names signal perceived origin; they say nothing about any real person.",
+  "_source": "First names: for each group, the 12 most frequent names given in France to children born 1985-2000 (INSEE, Fichier des prénoms), among candidate names typical of the group; names widely shared across groups (e.g. Sarah, Inès, Myriam, Mariam, Issa, Ismaël) are excluded because they carry a weak signal. Verify with scripts/check_first_names.py. Last names: common surnames associated with each group (INSEE does not publish surnames). Names signal perceived origin; they say nothing about any real person.",
   "first_names": {
     "majority": {
-      "female": ["Camille", "Julie", "Pauline", "Claire", "Mathilde"],
-      "male": ["Thomas", "Nicolas", "Julien", "Maxime", "Antoine"]
+      "female": ["Julie", "Laura", "Élodie", "Camille", "Marine", "Pauline", "Marion", "Aurélie", "Émilie", "Audrey", "Mathilde", "Charlotte"],
+      "male": ["Nicolas", "Julien", "Thomas", "Alexandre", "Maxime", "Romain", "Guillaume", "Jérémy", "Florian", "Antoine", "Quentin", "Pierre"]
     },
     "maghrebi": {
-      "female": ["Leïla", "Samira", "Nadia", "Yasmina", "Amina"],
-      "male": ["Mohamed", "Karim", "Youssef", "Mehdi", "Rachid"]
+      "female": ["Leïla", "Fatima", "Kenza", "Imane", "Samira", "Yasmina", "Malika", "Amina", "Karima", "Naïma", "Siham", "Nawel"],
+      "male": ["Mohamed", "Mehdi", "Karim", "Sofiane", "Samir", "Yassine", "Nabil", "Youssef", "Bilal", "Walid", "Rachid", "Hakim"]
     },
     "subsaharan": {
-      "female": ["Aminata", "Fatoumata", "Awa", "Mariama", "Aïssatou"],
-      "male": ["Moussa", "Mamadou", "Ibrahima", "Seydou", "Abdoulaye"]
+      "female": ["Fatoumata", "Aminata", "Hawa", "Bintou", "Mariama", "Aïssatou", "Awa", "Fanta", "Assa", "Oumou", "Coumba", "Binta"],
+      "male": ["Moussa", "Mamadou", "Mahamadou", "Ibrahima", "Abdoulaye", "Amadou", "Ousmane", "Oumar", "Lamine", "Sékou", "Demba", "Souleymane"]
     }
   },
   "last_names": {
-    "majority": ["Martin", "Bernard", "Dubois", "Lefebvre", "Moreau"],
-    "maghrebi": ["Benali", "Haddad", "Bouzid", "Belkacem", "Mansouri"],
-    "subsaharan": ["Diallo", "Traoré", "Koné", "Diop", "Camara"]
+    "majority": ["Martin", "Bernard", "Petit", "Durand", "Dubois", "Moreau", "Lefebvre", "Leroy", "Roux", "Fournier"],
+    "maghrebi": ["Benali", "Haddad", "Bouzid", "Belkacem", "Mansouri", "Cherif", "Hamidi", "Amrani", "Benamar", "Saïdi"],
+    "subsaharan": ["Diallo", "Traoré", "Koné", "Diop", "Camara", "Ndiaye", "Keïta", "Sylla", "Cissé", "Coulibaly"]
   },
   "addresses": {
     "central": [

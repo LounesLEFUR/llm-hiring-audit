@@ -105,10 +105,10 @@ addresses (so about −1.33 on average for the deprived area). 480 CVs × 3 prom
 
 | Effect | Truth | Estimate [95% CI] | Significant (Holm) |
 |---|---|---|---|
-| Maghrebi-sounding name | −6 | −5.52 [−6.19, −4.85] | yes |
-| Deprived-area address | ≈ −1.33 | −1.60 [−2.18, −1.03] | yes |
-| Female | 0 | −0.35 [−0.90, 0.19] | no |
-| Sub-Saharan-sounding name | 0 | −0.02 [−0.69, 0.65] | no |
+| Maghrebi-sounding name | −6 | −5.57 [−6.24, −4.89] | yes |
+| Deprived-area address | ≈ −1.33 | −1.58 [−2.17, −0.99] | yes |
+| Female | 0 | 0.56 [−0.01, 1.12] | no |
+| Sub-Saharan-sounding name | 0 | 0.23 [−0.45, 0.92] | no |
 
 Both planted effects are detected with the truth inside the interval, and no effect is
 found where none was planted. These properties are checked automatically in
@@ -123,21 +123,34 @@ analysis as the real one and reports how often a true effect is detected:
 uv run llm-hiring-audit power --residual-sd 5.92 --name-sd 2.65 --effect 2
 ```
 
-The noise inputs come from `analyze` on a 48-CV pilot run of each model. Power to detect a
-2-point gap (100 simulations each):
+The noise inputs come from `analyze` on a 48-CV pilot run of each model. open-mistral-nemo
+was barely affected by individual names (residual sd 4.8, name sd 0.8) and reaches 100%
+power from 480 CVs. Mistral 7B via Ollama reacted much more to individual names (residual sd
+5.9, name sd 2.7), and the simulation showed that **the number of distinct names, not the
+number of CVs, limited the audit**: a first name keeps its own quirk whatever CV it is put
+on, so with 5 first names per group, adding CVs kept reusing the same few quirks.
 
-| Profiles per job | CVs | open-mistral-nemo (sd 4.8, name sd 0.8) | Mistral 7B via Ollama (sd 5.9, name sd 2.7) |
+Power to detect a 2-point gap for Mistral 7B (100 simulations each):
+
+| Profiles per job | CVs | 5 first names per group | 12 first names per group |
 |---|---|---|---|
-| 2 | 192 | 89% | 43% |
-| 5 | 480 | 100% | 56% |
-| 10 | 960 | 100% | 79% |
-| 20 | 1,920 | 100% | 78% |
+| 5 | 480 | 64% | 76% |
+| 10 | 960 | 62% | **90%** |
+| 20 | 1,920 | 74% | 93% |
 
-For Mistral 7B, power stops increasing after about 10 profiles per job, and drawing 4 names
-per cell instead of 2 only raises it to about 85%. When the model reacts strongly to
-individual names, the number of *distinct names* limits the audit, not the number of CVs.
-With 5 first names per group, adding more CVs keeps reusing the same names. A larger name
-pool is the way to gain power.
+The name pool was therefore enlarged (see [Names](#names)), and the audits use 10 profiles
+per job (960 CVs).
+
+## Names
+
+First names are the 12 most frequent names given in France to children born 1985–2000
+(people aged about 25–40, a plausible candidate age) in each group, according to the
+[INSEE first-names file](https://www.insee.fr/fr/statistiques/8595130), among names typical
+of the group. Names widely given across groups (e.g. *Sarah*, *Inès*, *Myriam*, *Issa*) are
+excluded, since they would weaken the origin signal. Every name was given at least 425
+times in that period; `scripts/check_first_names.py` re-checks this against the INSEE file.
+INSEE does not publish surnames, so the 10 surnames per group are common surnames associated
+with each group.
 
 ## Development
 
@@ -156,7 +169,7 @@ uv run mypy src tests  # strict type checking
       Holm correction, refusal rates, ceiling check
 - [x] Validation: recover a planted bias from the mock model
 - [x] Power analysis: how many CVs are needed to detect a given effect
-- [ ] Larger name pool (power is limited by the number of distinct names)
+- [x] Larger name pool, checked against INSEE data
 - [ ] Audits of real models (Mistral 7B local, open-mistral-nemo, ministral-8b)
 - [ ] Results report and write-up
 
