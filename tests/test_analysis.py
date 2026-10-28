@@ -11,6 +11,7 @@ from llm_hiring_audit.analysis import (
     analyze,
     bootstrap_effects,
     estimate_effects,
+    intersectional_effects,
     prepare,
     refusal_rates,
     score_distribution,
@@ -137,3 +138,28 @@ def test_subgroup_holm_covers_all_tests(fair_scores: pd.DataFrame) -> None:
 def test_subgroup_rejects_unknown_column(fair_scores: pd.DataFrame) -> None:
     with pytest.raises(ValueError, match="Can only split"):
         subgroup_effects(prepare(fair_scores), by=("city",))
+
+
+def test_intersectional_finds_planted_interaction(tmp_path: Path) -> None:
+    # Penalise Maghrebi women only, through their first names. "Amina" is
+    # skipped because the mock matches substrings and it is inside "Aminata".
+    names = _load_json("names.json")["first_names"]["maghrebi"]["female"]
+    penalised = [name for name in names if name != "Amina"]
+    truth = -5.0 * len(penalised) / len(names)
+    mock = MockBackend(penalties={name: -5.0 for name in penalised})
+    df = prepare(_simulate(tmp_path, mock))
+
+    rows = intersectional_effects(df).set_index("group").to_dict("index")
+    interaction = rows["Interaction: Maghrebi x female"]
+    assert interaction["significant"]
+    assert interaction["ci_low"] <= truth <= interaction["ci_high"]
+    female_maghrebi = rows["Female, Maghrebi-sounding name"]
+    assert female_maghrebi["ci_low"] <= truth <= female_maghrebi["ci_high"]
+    assert not rows["Male, Maghrebi-sounding name"]["significant"]
+    assert not rows["Interaction: sub-Saharan x female"]["significant"]
+
+
+def test_intersectional_finds_nothing_on_fair_model(fair_scores: pd.DataFrame) -> None:
+    table = intersectional_effects(prepare(fair_scores))
+    assert len(table) == 7
+    assert not table["significant"].any()

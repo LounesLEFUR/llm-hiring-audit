@@ -54,6 +54,18 @@ def test_robustness_prints_and_writes_table(tmp_path: Path) -> None:
     assert (tmp_path / "subgroups_mock.csv").exists()
 
 
+def test_intersectional_prints_and_writes_table(tmp_path: Path) -> None:
+    cvs, scores = tmp_path / "cvs.jsonl", tmp_path / "scores.jsonl"
+    runner = CliRunner()
+    runner.invoke(app, ["generate", "--out", str(cvs), "--profiles-per-job", "1"])
+    runner.invoke(app, ["score", "--backend", "mock", "--cvs", str(cvs), "--out", str(scores)])
+    args = ["intersectional", "--scores", str(scores), "--out-dir", str(tmp_path)]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert "Interaction: Maghrebi x female" in result.output
+    assert (tmp_path / "intersectional_mock.csv").exists()
+
+
 def test_power_prints_table() -> None:
     args = ["power", "--residual-sd", "5", "--profiles-per-job", "1", "--n-sims", "3"]
     result = CliRunner().invoke(app, args)

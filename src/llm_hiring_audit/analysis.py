@@ -110,6 +110,54 @@ def subgroup_effects(
     return result[[*columns, "p_value", "p_holm", "significant"]]
 
 
+# Each row of the intersectional table: (label, linear combination of coefficients).
+# Gaps are measured against a man with a majority French name.
+INTERSECTIONAL_ROWS = [
+    ("Female, majority name", "female"),
+    ("Male, Maghrebi-sounding name", "maghrebi"),
+    ("Female, Maghrebi-sounding name", "female + maghrebi + female_x_maghrebi"),
+    ("Male, sub-Saharan-sounding name", "subsaharan"),
+    ("Female, sub-Saharan-sounding name", "female + subsaharan + female_x_subsaharan"),
+    ("Interaction: Maghrebi x female", "female_x_maghrebi"),
+    ("Interaction: sub-Saharan x female", "female_x_subsaharan"),
+]
+
+
+def intersectional_effects(df: pd.DataFrame, alpha: float = 0.05) -> pd.DataFrame:
+    """Gap of each gender x origin group, and whether origin penalties differ by gender.
+
+    The main model assumes the effects simply add up: a sub-Saharan woman
+    would get the female premium plus the sub-Saharan penalty. Here we add
+    two interaction terms (female x maghrebi, female x subsaharan). If an
+    interaction is non-zero, the origin effect is different for women and
+    for men. Inference is clustered by name, as in `estimate_effects`.
+    """
+    df = df.copy()
+    df["female_x_maghrebi"] = df["female"] * df["maghrebi"]
+    df["female_x_subsaharan"] = df["female"] * df["subsaharan"]
+    formula = _formula(df) + " + female_x_maghrebi + female_x_subsaharan"
+    names = pd.factorize(df["name"])[0]
+    fit = smf.ols(formula, data=df).fit(cov_type="cluster", cov_kwds={"groups": names})
+
+    rows = []
+    for label, combination in INTERSECTIONAL_ROWS:
+        test = fit.t_test(f"{combination} = 0")
+        ci_low, ci_high = test.conf_int(alpha=alpha)[0]
+        rows.append(
+            {
+                "group": label,
+                "estimate": float(test.effect[0]),
+                "ci_low": float(ci_low),
+                "ci_high": float(ci_high),
+                "p_value": float(test.pvalue),
+            }
+        )
+    table = pd.DataFrame(rows)
+    table["p_holm"] = multipletests(table["p_value"], alpha=alpha, method="holm")[1]
+    table["significant"] = table["p_holm"] < alpha
+    return table
+
+
 def bootstrap_effects(
     df: pd.DataFrame, n_boot: int = 500, seed: int = 0, alpha: float = 0.05
 ) -> pd.DataFrame:

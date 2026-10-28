@@ -9,7 +9,7 @@ import pandas as pd
 import typer
 
 from llm_hiring_audit.analysis import analyze as run_analysis
-from llm_hiring_audit.analysis import prepare, subgroup_effects
+from llm_hiring_audit.analysis import intersectional_effects, prepare, subgroup_effects
 from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
 from llm_hiring_audit.generator import CVGenerator
 from llm_hiring_audit.power import Design, estimate_power
@@ -145,6 +145,24 @@ def robustness(
         if out_dir:
             out_dir.mkdir(parents=True, exist_ok=True)
             table.to_csv(out_dir / f"subgroups_{str(model).replace('/', '_')}.csv", index=False)
+
+
+@app.command()
+def intersectional(
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
+) -> None:
+    """Gap of each gender x origin group, and gender x origin interactions."""
+    data = pd.DataFrame(read_jsonl(scores))
+    for model, raw in data.groupby("model"):
+        table = intersectional_effects(prepare(raw))
+        typer.echo(f"\n=== {model} ===")
+        typer.echo("Gaps vs a man with a majority name (Holm correction across all rows):")
+        typer.echo(table.round(3).to_string(index=False))
+        if out_dir:
+            out_dir.mkdir(parents=True, exist_ok=True)
+            slug = str(model).replace("/", "_")
+            table.to_csv(out_dir / f"intersectional_{slug}.csv", index=False)
 
 
 @app.command()

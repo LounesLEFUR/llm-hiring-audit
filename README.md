@@ -35,6 +35,13 @@ Holm-corrected significance (\*).
   significant in only 3: a 1-point effect is too small to confirm within each subset alone.
   One subset result runs against the pooled pattern (nemo, payroll jobs: deprived address
   −1.15, significant); with 28 tests it is treated as exploratory.
+- **For Mistral 7B, the female premium goes mostly to women with majority French names**
+  (`llm-hiring-audit intersectional`). Relative to a man with a majority name: women with
+  a majority name +3.3, Maghrebi-sounding names +1.9, sub-Saharan-sounding names +0.5 (not
+  significant); men with sub-Saharan-sounding names −1.2. The sub-Saharan penalty looks
+  larger for women than for men (interaction −1.6 points), but this is borderline after
+  correction (p = 0.054) and is reported as suggestive. For open-mistral-nemo the female
+  premium is similar for every origin (+1.0 to +1.2) and no interaction is detected.
 - Every result is confirmed by the cluster bootstrap (see
   [`results/2026-10/`](results/2026-10/)), which also contains the raw scores needed to
   reproduce the analysis.
@@ -114,6 +121,10 @@ uv run llm-hiring-audit robustness --scores data/scores.jsonl --out-dir results/
 
 `robustness` re-estimates every effect within each prompt wording and each job, with the
 Holm correction applied across all subgroup tests together.
+
+`intersectional` adds gender × origin interaction terms to the main model, to test whether
+the origin effect differs between women and men, and reports the gap of each gender ×
+origin group relative to a man with a majority French name.
 
 For each model, the effect of each signal is estimated in score points with
 
@@ -210,7 +221,7 @@ uv run mypy src tests  # strict type checking
 - [x] Larger name pool, checked against INSEE data
 - [x] Audits of real models: Mistral 7B (local) and open-mistral-nemo (API)
 - [x] Robustness by prompt and job (`robustness` command)
-- [ ] Intersectional effects (e.g. gender × origin)
+- [x] Intersectional effects (gender × origin)
 - [ ] More models (ministral-8b, other providers)
 - [ ] Results report and write-up
 
