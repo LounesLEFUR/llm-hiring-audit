@@ -42,6 +42,13 @@ def test_analyze_prints_and_writes_tables(tmp_path: Path) -> None:
     assert (tmp_path / "effects_mock.csv").exists()
 
 
+def test_power_prints_table() -> None:
+    args = ["power", "--residual-sd", "5", "--profiles-per-job", "1", "--n-sims", "3"]
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert "Power to detect a 2-point gap" in result.output
+
+
 def test_score_requires_model_for_real_backend() -> None:
     result = CliRunner().invoke(app, ["score", "--backend", "ollama"])
     assert result.exit_code != 0

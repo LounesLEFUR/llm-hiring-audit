@@ -138,12 +138,38 @@ def score_distribution(df: pd.DataFrame, ceiling: int = 90) -> dict[str, float]:
     }
 
 
+@dataclass(frozen=True)
+class NoiseEstimate:
+    residual_sd: float  # query-to-query noise
+    name_sd: float  # spread of the names' own effects
+
+
+def estimate_noise(df: pd.DataFrame) -> NoiseEstimate:
+    """Split the unexplained variance into a name part and a residual part.
+
+    One-way ANOVA (method of moments) on the regression residuals: the
+    variance of the names' mean residuals is name_var + residual_var / n,
+    where n is the average number of scores per name. These two numbers
+    are the inputs of the power analysis.
+    """
+    fit = smf.ols(_formula(df), data=df).fit()
+    total_var = float(fit.scale)
+    by_name = fit.resid.groupby(df["name"])
+    n = float(by_name.size().mean())
+    if n <= 1:
+        return NoiseEstimate(residual_sd=total_var**0.5, name_sd=0.0)
+    name_var = (float(by_name.mean().var()) - total_var / n) / (1 - 1 / n)
+    name_var = min(max(name_var, 0.0), total_var)
+    return NoiseEstimate(residual_sd=(total_var - name_var) ** 0.5, name_sd=name_var**0.5)
+
+
 @dataclass
 class AuditReport:
     model: str
     effects: pd.DataFrame
     refusals: pd.DataFrame
     distribution: dict[str, float]
+    noise: NoiseEstimate
 
 
 def analyze(scores: pd.DataFrame, n_boot: int = 500, seed: int = 0) -> list[AuditReport]:
@@ -160,6 +186,7 @@ def analyze(scores: pd.DataFrame, n_boot: int = 500, seed: int = 0) -> list[Audi
                 effects=effects,
                 refusals=refusal_rates(raw),
                 distribution=score_distribution(df),
+                noise=estimate_noise(df),
             )
         )
     return reports

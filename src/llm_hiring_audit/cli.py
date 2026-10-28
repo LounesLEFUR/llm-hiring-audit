@@ -11,6 +11,7 @@ import typer
 from llm_hiring_audit.analysis import analyze as run_analysis
 from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
 from llm_hiring_audit.generator import CVGenerator
+from llm_hiring_audit.power import Design, estimate_power
 from llm_hiring_audit.prompts import PROMPTS
 from llm_hiring_audit.render import cv_to_record
 from llm_hiring_audit.scoring import Scorer, read_jsonl
@@ -117,11 +118,43 @@ def analyze(
         typer.echo(report.effects[columns].round(3).to_string(index=False))
         typer.echo("\nRefusal / unparseable rate:")
         typer.echo(report.refusals.round(3).to_string(index=False))
+        typer.echo(
+            f"\nNoise (inputs for `power`): residual sd {report.noise.residual_sd:.2f}, "
+            f"name sd {report.noise.name_sd:.2f}"
+        )
         if out_dir:
             out_dir.mkdir(parents=True, exist_ok=True)
             slug = report.model.replace("/", "_")
             report.effects.to_csv(out_dir / f"effects_{slug}.csv", index=False)
             report.refusals.to_csv(out_dir / f"refusals_{slug}.csv", index=False)
+
+
+@app.command()
+def power(
+    residual_sd: Annotated[float, typer.Option(help="From `analyze` on a pilot run.")],
+    name_sd: Annotated[float, typer.Option(help="From `analyze` on a pilot run.")] = 0.0,
+    effect: Annotated[float, typer.Option(help="Effect to detect, in points.")] = 2.0,
+    profiles_per_job: Annotated[
+        list[int] | None, typer.Option(help="Sizes to compare; repeatable.")
+    ] = None,
+    names_per_cell: Annotated[int, typer.Option(min=1)] = 2,
+    n_prompts: Annotated[int, typer.Option(min=1)] = 3,
+    repetitions: Annotated[int, typer.Option(min=1)] = 1,
+    n_sims: Annotated[int, typer.Option(min=1)] = 200,
+    seed: int = 0,
+) -> None:
+    """Probability of detecting an effect of EFFECT points, for several audit sizes."""
+    typer.echo(f"Power to detect a {effect:g}-point gap (Holm-corrected, alpha = 0.05):")
+    typer.echo(f"{'profiles/job':>12} {'CVs':>6} {'queries':>8} {'power':>6}")
+    for size in profiles_per_job or [2, 5, 10, 20]:
+        design = Design(
+            profiles_per_job=size,
+            names_per_cell=names_per_cell,
+            n_prompts=n_prompts,
+            repetitions=repetitions,
+        )
+        p = estimate_power(design, effect, residual_sd, name_sd, n_sims=n_sims, seed=seed)
+        typer.echo(f"{size:>12} {design.n_cvs:>6} {design.n_queries:>8} {p:>6.0%}")
 
 
 EFFECT_COLUMNS = [
