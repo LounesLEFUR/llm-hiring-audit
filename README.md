@@ -114,6 +114,31 @@ Both planted effects are detected with the truth inside the interval, and no eff
 found where none was planted. These properties are checked automatically in
 `tests/test_analysis.py`.
 
+## Power analysis
+
+How many CVs does an audit need? `power` simulates many audits with the same design and
+analysis as the real one and reports how often a true effect is detected:
+
+```bash
+uv run llm-hiring-audit power --residual-sd 5.92 --name-sd 2.65 --effect 2
+```
+
+The noise inputs come from `analyze` on a 48-CV pilot run of each model. Power to detect a
+2-point gap (100 simulations each):
+
+| Profiles per job | CVs | open-mistral-nemo (sd 4.8, name sd 0.8) | Mistral 7B via Ollama (sd 5.9, name sd 2.7) |
+|---|---|---|---|
+| 2 | 192 | 89% | 43% |
+| 5 | 480 | 100% | 56% |
+| 10 | 960 | 100% | 79% |
+| 20 | 1,920 | 100% | 78% |
+
+For Mistral 7B, power stops increasing after about 10 profiles per job, and drawing 4 names
+per cell instead of 2 only raises it to about 85%. When the model reacts strongly to
+individual names, the number of *distinct names* limits the audit, not the number of CVs.
+With 5 first names per group, adding more CVs keeps reusing the same names. A larger name
+pool is the way to gain power.
+
 ## Development
 
 ```bash
@@ -130,7 +155,8 @@ uv run mypy src tests  # strict type checking
 - [x] Analysis: fixed-effects regression with name-clustered errors, cluster bootstrap,
       Holm correction, refusal rates, ceiling check
 - [x] Validation: recover a planted bias from the mock model
-- [ ] Power analysis: how many CVs are needed to detect a given effect
+- [x] Power analysis: how many CVs are needed to detect a given effect
+- [ ] Larger name pool (power is limited by the number of distinct names)
 - [ ] Audits of real models (Mistral 7B local, open-mistral-nemo, ministral-8b)
 - [ ] Results report and write-up
 
