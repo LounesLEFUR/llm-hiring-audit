@@ -100,7 +100,11 @@ Then ask a model to score them:
 uv run llm-hiring-audit score --backend ollama --model mistral --cvs data/cvs.jsonl --out data/scores.jsonl
 
 # Mistral API (set MISTRAL_API_KEY first)
-uv run llm-hiring-audit score --backend mistral --model mistral-small-latest --cvs data/cvs.jsonl --out data/scores.jsonl
+uv run llm-hiring-audit score --backend mistral --model open-mistral-nemo --cvs data/cvs.jsonl --out data/scores.jsonl
+
+# Gemini API (set GEMINI_API_KEY first; the free tier allows too few requests per day
+# for a full audit, so this needs a paid key)
+uv run llm-hiring-audit score --backend gemini --model gemini-3.5-flash --cvs data/cvs.jsonl --out data/scores.jsonl
 
 # Fake model with a planted bias, to validate the analysis
 uv run llm-hiring-audit score --backend mock --mock-penalty Sevran=-4 --cvs data/cvs.jsonl --out data/scores_mock.jsonl
@@ -212,7 +216,7 @@ uv run mypy src tests  # strict type checking
 ## Roadmap
 
 - [x] Matched CV generator (factorial design)
-- [x] Model backends: local models (Ollama) and Mistral API, with mocked tests
+- [x] Model backends: local models (Ollama), Mistral API and Gemini API, with mocked tests
 - [x] Three prompt wordings
 - [x] Analysis: fixed-effects regression with name-clustered errors, cluster bootstrap,
       Holm correction, refusal rates, ceiling check
@@ -222,8 +226,8 @@ uv run mypy src tests  # strict type checking
 - [x] Audits of real models: Mistral 7B (local) and open-mistral-nemo (API)
 - [x] Robustness by prompt and job (`robustness` command)
 - [x] Intersectional effects (gender × origin)
-- [ ] More models (ministral-8b, other providers)
-- [ ] Results report and write-up
+- [x] Results write-up and policy brief
+- [ ] More models: a widely deployed frontier model (e.g. GPT, Gemini, Claude) via a paid API
 
 ## Related work
 
@@ -247,3 +251,8 @@ on the origin groups relevant to the French labour market, and on place of resid
 
 Names and addresses are *signals of perceived* group membership, not identities. The
 results describe how a model reacts to these signals in this specific setting.
+
+The audit covers two open-weight models from one provider, Mistral, because both could
+be run for free. It shows that models from the same provider can behave differently, but
+it does not tell how the frontier models most used in industry behave; the Gemini backend
+and the rest of the pipeline are ready for that extension.
