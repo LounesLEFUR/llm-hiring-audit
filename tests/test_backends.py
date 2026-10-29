@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-from llm_hiring_audit.backends import MistralBackend, MockBackend, OllamaBackend
+from llm_hiring_audit.backends import GeminiBackend, MistralBackend, MockBackend, OllamaBackend
 
 
 def _client(handler: httpx.MockTransport, base_url: str) -> httpx.Client:
@@ -49,6 +49,42 @@ def test_mistral_requires_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
     with pytest.raises(ValueError, match="MISTRAL_API_KEY"):
         MistralBackend("mistral-small-latest")
+
+
+def test_gemini_request_and_response() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.content)
+        parts = [{"text": "thinking...", "thought": True}, {"text": "64"}]
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": parts}}]})
+
+    client = _client(httpx.MockTransport(handler), "https://generativelanguage.googleapis.com")
+    backend = GeminiBackend("gemini-2.5-flash", api_key="test", client=client)
+    # The thought part is ignored: only the visible answer is returned.
+    assert backend.complete("bonjour", temperature=0.7, seed=2) == "64"
+    assert backend.name == "gemini/gemini-2.5-flash"
+    body = seen["body"]
+    assert isinstance(body, dict)
+    assert seen["path"] == "/v1beta/models/gemini-2.5-flash:generateContent"
+    assert body["generationConfig"] == {"temperature": 0.7, "seed": 2}
+    assert body["contents"][0]["parts"][0]["text"] == "bonjour"
+
+
+def test_gemini_blocked_prompt_returns_empty_answer() -> None:
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(200, json={"promptFeedback": {"blockReason": "OTHER"}})
+    )
+    client = _client(transport, "https://generativelanguage.googleapis.com")
+    backend = GeminiBackend("gemini-2.5-flash", api_key="test", client=client)
+    assert backend.complete("bonjour", temperature=0.7, seed=0) == ""
+
+
+def test_gemini_requires_a_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+        GeminiBackend("gemini-2.5-flash")
 
 
 def test_http_errors_are_raised() -> None:

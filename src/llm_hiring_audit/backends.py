@@ -101,6 +101,51 @@ class MistralBackend:
         return content
 
 
+class GeminiBackend:
+    """A model from the Google Gemini API. Reads the key from GEMINI_API_KEY."""
+
+    def __init__(
+        self,
+        model: str,
+        api_key: str | None = None,
+        client: httpx.Client | None = None,
+    ) -> None:
+        key = api_key or os.environ.get("GEMINI_API_KEY")
+        if not key:
+            raise ValueError("Set the GEMINI_API_KEY environment variable.")
+        self.model = model
+        self._client = client or httpx.Client(
+            base_url="https://generativelanguage.googleapis.com",
+            headers={"x-goog-api-key": key},
+            timeout=60,
+        )
+
+    @property
+    def name(self) -> str:
+        return f"gemini/{self.model}"
+
+    def complete(self, prompt: str, *, temperature: float, seed: int) -> str:
+        response = self._client.post(
+            f"/v1beta/models/{self.model}:generateContent",
+            json={
+                "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": temperature, "seed": seed},
+            },
+        )
+        response.raise_for_status()
+        data: dict[str, Any] = response.json()
+        # A blocked prompt comes back with no candidate (or no text) instead of
+        # an error. Return "" so it is recorded as an answer without a score
+        # and counted in the refusal rates, rather than crashing the run.
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return ""
+        parts: list[dict[str, Any]] = candidates[0].get("content", {}).get("parts", [])
+        texts = [str(p.get("text", "")) for p in parts if not p.get("thought")]
+        return "".join(texts)
+
+
 class MockBackend:
     """Fake model whose score depends on planted penalties.
 

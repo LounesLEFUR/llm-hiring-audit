@@ -10,7 +10,13 @@ import typer
 
 from llm_hiring_audit.analysis import analyze as run_analysis
 from llm_hiring_audit.analysis import intersectional_effects, prepare, subgroup_effects
-from llm_hiring_audit.backends import LLMBackend, MistralBackend, MockBackend, OllamaBackend
+from llm_hiring_audit.backends import (
+    GeminiBackend,
+    LLMBackend,
+    MistralBackend,
+    MockBackend,
+    OllamaBackend,
+)
 from llm_hiring_audit.generator import CVGenerator
 from llm_hiring_audit.power import Design, estimate_power
 from llm_hiring_audit.prompts import PROMPTS
@@ -46,6 +52,7 @@ class BackendName(StrEnum):
     MOCK = "mock"
     OLLAMA = "ollama"
     MISTRAL = "mistral"
+    GEMINI = "gemini"
 
 
 def _parse_penalties(items: list[str]) -> dict[str, float]:
@@ -66,6 +73,8 @@ def _make_backend(backend: BackendName, model: str, penalties: list[str]) -> LLM
             return OllamaBackend(model)
         case BackendName.MISTRAL:
             return MistralBackend(model)
+        case BackendName.GEMINI:
+            return GeminiBackend(model)
 
 
 @app.command()
