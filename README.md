@@ -213,6 +213,11 @@ uv run ruff check .    # lint
 uv run mypy src tests  # strict type checking
 ```
 
+## Design decisions
+
+The main choices behind the audit, the alternatives considered and the trade-offs accepted
+are recorded in [docs/decisions.md](docs/decisions.md).
+
 ## Roadmap
 
 - [x] Matched CV generator (factorial design)
