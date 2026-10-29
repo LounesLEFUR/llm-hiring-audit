@@ -33,7 +33,7 @@ def main() -> None:
 
 @app.command()
 def generate(
-    out: Annotated[Path, typer.Option(help="Output JSONL file.")] = Path("cvs.jsonl"),
+    out: Annotated[Path, typer.Option(help="Output JSONL file.")] = Path("data/cvs.jsonl"),
     profiles_per_job: Annotated[int, typer.Option(min=1)] = 5,
     names_per_cell: Annotated[int, typer.Option(min=1)] = 2,
     seed: Annotated[int, typer.Option(help="Random seed (reproducibility).")] = 0,
@@ -81,8 +81,8 @@ def _make_backend(backend: BackendName, model: str, penalties: list[str]) -> LLM
 def score(
     backend: Annotated[BackendName, typer.Option(help="Which model provider to use.")],
     model: Annotated[str, typer.Option(help="Model name, e.g. mistral-small-latest.")] = "",
-    cvs: Annotated[Path, typer.Option(help="CVs from `generate`.")] = Path("cvs.jsonl"),
-    out: Annotated[Path, typer.Option(help="Output JSONL (appended).")] = Path("scores.jsonl"),
+    cvs: Annotated[Path, typer.Option(help="CVs from `generate`.")] = Path("data/cvs.jsonl"),
+    out: Annotated[Path, typer.Option(help="Output JSONL (appended).")] = Path("data/scores.jsonl"),
     prompt: Annotated[list[str] | None, typer.Option(help="Prompt id; repeatable.")] = None,
     repetitions: Annotated[int, typer.Option(min=1)] = 3,
     temperature: Annotated[float, typer.Option(min=0.0)] = 0.7,
@@ -107,9 +107,16 @@ def score(
     typer.echo(f"Scored {n} new queries into {out}")
 
 
+def _write_table(table: pd.DataFrame, out_dir: Path, kind: str, model: object) -> None:
+    """Write e.g. effects_ollama_mistral.csv for model "ollama/mistral"."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    slug = str(model).replace("/", "_")
+    table.to_csv(out_dir / f"{kind}_{slug}.csv", index=False)
+
+
 @app.command()
 def analyze(
-    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("data/scores.jsonl"),
     n_boot: Annotated[int, typer.Option(min=0, help="Bootstrap resamples (0 = skip).")] = 500,
     seed: int = 0,
     out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
@@ -133,15 +140,13 @@ def analyze(
             f"name sd {report.noise.name_sd:.2f}"
         )
         if out_dir:
-            out_dir.mkdir(parents=True, exist_ok=True)
-            slug = report.model.replace("/", "_")
-            report.effects.to_csv(out_dir / f"effects_{slug}.csv", index=False)
-            report.refusals.to_csv(out_dir / f"refusals_{slug}.csv", index=False)
+            _write_table(report.effects, out_dir, "effects", report.model)
+            _write_table(report.refusals, out_dir, "refusals", report.model)
 
 
 @app.command()
 def robustness(
-    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("data/scores.jsonl"),
     out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
 ) -> None:
     """Estimate the effects separately for each prompt wording and each job."""
@@ -152,13 +157,12 @@ def robustness(
         typer.echo("Effects by subgroup (Holm correction across all rows below):")
         typer.echo(table.round(3).to_string(index=False))
         if out_dir:
-            out_dir.mkdir(parents=True, exist_ok=True)
-            table.to_csv(out_dir / f"subgroups_{str(model).replace('/', '_')}.csv", index=False)
+            _write_table(table, out_dir, "subgroups", model)
 
 
 @app.command()
 def intersectional(
-    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("scores.jsonl"),
+    scores: Annotated[Path, typer.Option(help="Scores from `score`.")] = Path("data/scores.jsonl"),
     out_dir: Annotated[Path | None, typer.Option(help="Also write CSV tables here.")] = None,
 ) -> None:
     """Gap of each gender x origin group, and gender x origin interactions."""
@@ -169,9 +173,7 @@ def intersectional(
         typer.echo("Gaps vs a man with a majority name (Holm correction across all rows):")
         typer.echo(table.round(3).to_string(index=False))
         if out_dir:
-            out_dir.mkdir(parents=True, exist_ok=True)
-            slug = str(model).replace("/", "_")
-            table.to_csv(out_dir / f"intersectional_{slug}.csv", index=False)
+            _write_table(table, out_dir, "intersectional", model)
 
 
 @app.command()

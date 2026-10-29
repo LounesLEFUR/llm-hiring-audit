@@ -43,7 +43,7 @@ applicants), and it is a method economists and regulators already trust.
 ## 2. A full factorial design within each profile
 
 **Decision.** Each base profile is copied into all 12 combinations of gender (2) × perceived
-origin (3) × address (2), each with 2 different names: 80 profiles, 960 CVs.
+origin (3) × address (2), each with 2 different names: 40 profiles (10 per job), 960 CVs.
 
 **Alternatives.** Matched pairs (one comparison at a time); random assignment of one version
 per profile.

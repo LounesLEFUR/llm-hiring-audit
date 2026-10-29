@@ -1,0 +1,2 @@
+# Store text files with Unix line endings, whatever the contributor's OS
+* text=auto eol=lf

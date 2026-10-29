@@ -1,4 +1,4 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
 build/
@@ -6,9 +6,14 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
+# Virtual environment
 .venv
 
-# Generated audit data
-/data/
+# Tool caches and reports
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 .coverage
+
+# Local working data (generated CVs and scores; published results live in results/)
+/data/

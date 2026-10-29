@@ -3,6 +3,7 @@ name = "llm-hiring-audit"
 version = "0.1.0"
 description = "Statistical correspondence audit of LLMs used to screen French CVs (EU AI Act, Annex III high-risk use case)."
 readme = "README.md"
+authors = [{ name = "Lounès Le Fur" }]
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
@@ -41,10 +42,10 @@ select = ["E", "F", "I", "B", "UP", "SIM", "N"]
 strict = true
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["statsmodels.*"]  # statsmodels ships no type information
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=llm_hiring_audit --cov-report=term-missing"
-
-[[tool.mypy.overrides]]
-module = ["statsmodels.*"]
-ignore_missing_imports = true

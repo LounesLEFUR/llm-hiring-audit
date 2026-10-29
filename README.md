@@ -1,269 +1,156 @@
 # llm-hiring-audit
 
+[![CI](https://github.com/LounesLEFUR/llm-hiring-audit/actions/workflows/ci.yml/badge.svg)](https://github.com/LounesLEFUR/llm-hiring-audit/actions/workflows/ci.yml)
+
 **Do large language models discriminate when they screen French CVs?**
 
-This project measures it with the method labour economists use to measure discrimination
-by human recruiters: the **correspondence audit study** (Bertrand & Mullainathan, 2004;
-in France, the DARES / ISM Corum testing campaigns). We send a model CVs that are
-identical except for the candidate's name and address, and test whether its scores differ.
+This project measures it with the method labour economists use for human recruiters, the
+**correspondence audit**: send a model CVs that are identical except for the candidate's name and
+address, and test whether its scores differ. It turns a requirement of the EU AI Act, examining
+hiring systems for discriminatory bias, into a reproducible, quantitative test.
 
-## Key results (October 2026)
+## Key results
 
-960 matched CVs × 3 prompt wordings = 2,880 scores per model, on a 1–100 scale. Effects are
-in score points relative to a male candidate with a majority French name living in central
-Paris, with profile and prompt fixed effects, 95% confidence intervals clustered by first name
-and surname, and
-Holm-corrected significance (\*).
+960 matched CVs × 3 prompt wordings = 2,880 scores per model, on a 1–100 scale (October 2026).
+Effects are in score points relative to a man with a majority French name living in central
+Paris, with 95% confidence intervals. \* = significant after Holm correction.
 
-| Effect | Mistral 7B (local, Ollama) | open-mistral-nemo (Mistral API) |
+| Effect | Mistral 7B (local) | Mistral NeMo (API) |
 |---|---|---|
-| Female | **+2.43** [1.89, 2.97]\* | **+1.21** [0.86, 1.56]\* |
-| Maghrebi-sounding name | **−0.94** [−1.46, −0.43]\* | −0.16 [−0.68, 0.35] |
 | Sub-Saharan-sounding name | **−2.02** [−2.60, −1.44]\* | +0.01 [−0.54, 0.57] |
 | Deprived-area address | **−1.09** [−1.60, −0.59]\* | +0.21 [−0.20, 0.62] |
-| Unparseable answers | 0.5% (no group difference) | 0.1% (no group difference) |
+| Maghrebi-sounding name | **−0.94** [−1.46, −0.43]\* | −0.16 [−0.68, 0.35] |
+| Female | **+2.43** [1.89, 2.97]\* | **+1.21** [0.86, 1.56]\* |
+| Answers without a usable score | 0.5%, no group difference | 0.1%, no group difference |
 
-- **Two models from the same provider behave very differently.** Mistral 7B penalises
-  candidates with sub-Saharan-sounding names (−2.0 points), Maghrebi-sounding names
-  (−0.9) and a deprived-area address (−1.1). open-mistral-nemo shows none of these
-  penalties, and its intervals rule out penalties larger than about 0.7 points.
-- **Both models favour women**, by +2.4 and +1.2 points.
-- **The main effects are not driven by one prompt or one job** (`llm-hiring-audit
-  robustness`, Holm correction across all 28 subgroup tests). For Mistral 7B, the female
-  premium and the sub-Saharan penalty are significant in all 7 subsets (3 prompt wordings,
-  4 jobs). For open-mistral-nemo, the female premium is positive in all 7 subsets (+0.8 to
-  +1.8) and significant in 6. Subset results are less certain than the pooled ones: each
-  subset has fewer name clusters, and with the earlier full-name clustering these counts
-  were lower (sub-Saharan 6 of 7, nemo female 3 of 7). One subset result runs against the
-  pooled pattern (nemo, payroll jobs: deprived address −1.15, significant); with 28 tests it
-  is treated as exploratory.
-- **For Mistral 7B, the female premium goes mostly to women with majority French names**
-  (`llm-hiring-audit intersectional`). Relative to a man with a majority name: women with
-  a majority name +3.3, Maghrebi-sounding names +1.9, sub-Saharan-sounding names +0.5 (not
-  significant); men with sub-Saharan-sounding names −1.2. The sub-Saharan penalty looks
-  larger for women than for men (interaction −1.6 points), but this is borderline after
-  correction (p = 0.071) and is reported as suggestive. For open-mistral-nemo the female
-  premium is similar for every origin (+1.0 to +1.2) and no interaction is detected.
-- Every result is confirmed by the cluster bootstrap (see
-  [`results/2026-10/`](results/2026-10/)), which also contains the raw scores needed to
-  reproduce the analysis.
+- **Two models from the same provider behave in opposite ways.** Mistral 7B penalises
+  sub-Saharan-sounding names, Maghrebi-sounding names and deprived-area addresses. Mistral NeMo
+  shows none of these penalties, and its intervals rule out any larger than about 0.7 points.
+- **Both models favour women.** For Mistral 7B, the premium goes mostly to women with majority
+  French names (+3.3 points); women with sub-Saharan-sounding names get +0.5 (not significant).
+- **The largest effects hold in every prompt wording and every job**: for Mistral 7B, the
+  sub-Saharan penalty and the female premium are significant in all 7 subsets. The smaller
+  Maghrebi and address penalties are confirmed overall but not in every subset. A cluster bootstrap
+  confirms every overall result.
 
-These gaps are small on a 100-point scale, but they are systematic: a screening tool that
-ranks or thresholds candidates turns a consistent 2-point gap into fewer shortlisted
-candidates from the penalised group. Results apply to these model versions, this prompt
-design and these four jobs. Models change, so audits should be re-run on each new version.
+The gaps are small on a 100-point scale but systematic: a tool that shortlists the top-scored
+candidates turns a steady 2-point gap into fewer interviews for the penalised group. Results apply
+to these model versions, prompts and four jobs, and should be re-run on each new model version.
+Full tables and raw data: [`results/2026-10/`](results/2026-10/).
 
 ## Why it matters
 
-Using AI to recruit or select candidates is classified as **high-risk** by the EU AI Act
-(Regulation (EU) 2024/1689, **Annex III, point 4(a)**). Providers of such systems must
-examine their data for possible biases (Article 10(2)(f)), and French law prohibits
-discrimination in hiring based on origin, sex or place of residence (Code du travail,
-art. L1132-1). This tool turns those requirements into a reproducible, quantitative test.
+AI used to filter job applications is **high-risk** under the EU AI Act (Regulation (EU)
+2024/1689, Annex III, point 4(a)): providers must examine such systems for biases that could lead
+to discrimination (Article 10). French law prohibits hiring discrimination based on origin, sex or
+place of residence (Code du travail, art. L1132-1). Most published LLM audits use English CVs and
+US names; this one uses French CVs, the origin groups relevant to the French labour market, and
+place of residence.
 
-## Experimental design
+## How it works
 
-Each **base profile** (experience, education, skills) is crossed with every cell of a
-full factorial design:
+1. **Generate matched CVs.** 40 base profiles across 4 jobs, each in 12 versions (gender × 3
+   perceived origins × 2 addresses) with 2 names each. First names come from INSEE birth data;
+   all wording is gender-neutral French, so the name is the only gender signal.
+2. **Score them.** Each CV is rated 1–100 under three wordings (rate, interview, hire), in random
+   order. Unusable answers are kept and analysed as refusals.
+3. **Estimate the effects.** OLS with profile and prompt fixed effects, standard errors clustered
+   by first name and surname, a cluster bootstrap, and Holm correction for multiple tests.
+4. **Check the method.** A mock model with planted biases verifies that the analysis recovers them,
+   and a simulation fixed the sample size in advance (90% power to detect a 2-point gap).
 
-| Factor | Levels |
-|---|---|
-| Gender (signalled by first name) | female, male |
-| Perceived origin (signalled by name) | majority French, Maghrebi, sub-Saharan African |
-| Address | central Paris, deprived neighbourhood (QPV) |
-
-That gives 12 versions of every profile, with several different names per cell so the
-analysis can separate the effect of a *group* from the effect of one particular *name*.
-
-Design guarantees, each enforced by a unit test:
-
-- **Qualifications are held constant**: CVs of the same profile differ only in name,
-  address and email.
-- **Gender-neutral wording**: French job titles are epicene (*comptable*,
-  *gestionnaire de paie*), so grammatical gender cannot leak the treatment.
-- **Balanced design**: every cell has the same number of CVs.
-- **Reproducibility**: the same seed always produces the same CVs.
+Details: [docs/methodology.md](docs/methodology.md). Why each choice was made, and what it cost:
+[docs/decisions.md](docs/decisions.md).
 
 ## Quick start
 
-Requires [uv](https://docs.astral.sh/uv/).
+Requires Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
+git clone https://github.com/LounesLEFUR/llm-hiring-audit.git
+cd llm-hiring-audit
 uv sync
-uv run llm-hiring-audit generate --profiles-per-job 5 --out data/cvs.jsonl
+
+# Rebuild the published results from the committed raw scores (no model needed)
+uv run llm-hiring-audit analyze --scores results/2026-10/raw/scores_ollama_mistral.jsonl
+
+# Or run a new audit end to end, here with a local model via Ollama
+uv run llm-hiring-audit generate --profiles-per-job 10 --seed 2026
+uv run llm-hiring-audit score --backend ollama --model mistral --repetitions 1
+uv run llm-hiring-audit analyze
 ```
 
-This writes 480 CVs (4 jobs × 5 profiles × 12 cells × 2 names), one JSON record per line.
+Generated files go to `data/`, which is not tracked by git.
 
-Then ask a model to score them:
+| Command | What it does |
+|---|---|
+| `generate` | Write matched CVs to a JSONL file |
+| `score` | Have a model score every CV (`--backend ollama`, `mistral`, `gemini` or `mock`); resumable |
+| `analyze` | Main effects, bootstrap, refusal rates and score distribution |
+| `robustness` | Effects within each prompt wording and each job |
+| `intersectional` | Gender × origin groups and interactions |
+| `power` | Simulated power for a given design and noise level |
 
-```bash
-# Local model via Ollama
-uv run llm-hiring-audit score --backend ollama --model mistral --cvs data/cvs.jsonl --out data/scores.jsonl
+API backends read their key from `MISTRAL_API_KEY` or `GEMINI_API_KEY`. Run
+`uv run llm-hiring-audit <command> --help` for every option.
 
-# Mistral API (set MISTRAL_API_KEY first)
-uv run llm-hiring-audit score --backend mistral --model open-mistral-nemo --cvs data/cvs.jsonl --out data/scores.jsonl
+## Project structure
 
-# Gemini API (set GEMINI_API_KEY first; the free tier allows too few requests per day
-# for a full audit, so this needs a paid key)
-uv run llm-hiring-audit score --backend gemini --model gemini-3.5-flash --cvs data/cvs.jsonl --out data/scores.jsonl
-
-# Fake model with a planted bias, to validate the analysis
-uv run llm-hiring-audit score --backend mock --mock-penalty Sevran=-4 --cvs data/cvs.jsonl --out data/scores_mock.jsonl
 ```
-
-Each CV is scored on a 1–100 scale with three prompt wordings (rating, interview, hiring)
-and several repetitions, because LLM answers are sensitive to wording and vary between
-calls. Queries are shuffled so that model drift during a long run cannot line up with a
-demographic group. Runs can be interrupted and resumed, and answers that contain no valid
-score are kept (`score: null`) so the refusal rate can be analysed too.
-
-## Statistical analysis
-
-```bash
-uv run llm-hiring-audit analyze --scores data/scores.jsonl --out-dir results/
-uv run llm-hiring-audit robustness --scores data/scores.jsonl --out-dir results/
+llm-hiring-audit/
+├── src/llm_hiring_audit/
+│   ├── models.py        Data models: profile, treatment, identity, CV
+│   ├── generator.py     Matched CV generation (factorial design)
+│   ├── render.py        CV as French plain text
+│   ├── prompts.py       The three scoring prompts
+│   ├── backends.py      Ollama, Mistral, Gemini and mock model clients
+│   ├── scoring.py       Shuffled, resumable scoring and score parsing
+│   ├── analysis.py      Regression, bootstrap, Holm, robustness, intersectional
+│   ├── power.py         Simulation-based power analysis
+│   ├── cli.py           Command-line interface
+│   └── data/            Job postings and name lists
+├── tests/               Unit tests (no network: model calls are mocked)
+├── scripts/             Check of first names against INSEE data
+├── results/2026-10/     Raw scores and result tables of the October 2026 audit
+└── docs/                Methodology and decision log
 ```
-
-`robustness` re-estimates every effect within each prompt wording and each job, with the
-Holm correction applied across all subgroup tests together.
-
-`intersectional` adds gender × origin interaction terms to the main model, to test whether
-the origin effect differs between women and men, and reports the gap of each gender ×
-origin group relative to a man with a majority French name.
-
-For each model, the effect of each signal is estimated in score points with
-
-$$
-\text{score}_{i} = \beta_1\,\text{female}_i + \beta_2\,\text{maghrebi}_i + \beta_3\,\text{subsaharan}_i
-+ \beta_4\,\text{deprived}_i + \alpha_{\text{profile}(i)} + \gamma_{\text{prompt}(i)} + \varepsilon_i
-$$
-
-- **Profile fixed effects** ($\alpha$) compare each CV only with the other versions of the
-  same profile, so differences in qualifications cannot contaminate the estimates.
-- **Prompt fixed effects** ($\gamma$) absorb level differences between the three wordings.
-- **Standard errors clustered by first name and by surname** (two-way): all scores of one
-  first name share that name's own effect, whatever surname it is paired with, and likewise
-  for surnames, so treating them as independent would make confidence intervals too narrow.
-- **Cluster bootstrap over profiles** gives a second confidence interval that does not rely
-  on the regression's distributional assumptions.
-- **Holm correction** controls the family-wise error rate across the effects tested together.
-- **Refusal rates** by group are tested with a chi-square test, since refusing to score some
-  candidates more often is itself a form of unequal treatment.
-- **Ceiling check**: the share of scores at 90 or above, since a compressed scale can hide
-  real differences.
-
-### Validation on a model with a known bias
-
-Before trusting the analysis on real models, it is run on a mock model with planted
-penalties: −6 points for Maghrebi surnames and −4 points for one of the three deprived-area
-addresses (so about −1.33 on average for the deprived area). 480 CVs × 3 prompts:
-
-| Effect | Truth | Estimate [95% CI] | Significant (Holm) |
-|---|---|---|---|
-| Maghrebi-sounding name | −6 | −5.57 [−6.27, −4.86] | yes |
-| Deprived-area address | ≈ −1.33 | −1.58 [−2.28, −0.89] | yes |
-| Female | 0 | 0.56 [0.06, 1.05] | no (p = 0.056 after Holm) |
-| Sub-Saharan-sounding name | 0 | 0.23 [−0.29, 0.76] | no |
-
-Both planted effects are detected with the truth inside the interval, and no effect is
-found where none was planted after the Holm correction. The uncorrected interval for
-"female" just misses zero: a reminder that a single 95% interval misses the truth 5% of the
-time, and that with only 30 surname clusters, cluster-robust intervals may be slightly too
-narrow (see [decision 10](docs/decisions.md#10-ols-with-profile-fixed-effects-errors-clustered-by-name)). These properties are checked automatically in
-`tests/test_analysis.py`.
-
-## Power analysis
-
-How many CVs does an audit need? `power` simulates many audits with the same design and
-analysis as the real one and reports how often a true effect is detected:
-
-```bash
-uv run llm-hiring-audit power --residual-sd 5.92 --name-sd 2.65 --effect 2
-```
-
-The noise inputs come from `analyze` on a 48-CV pilot run of each model. open-mistral-nemo
-was barely affected by individual names (residual sd 4.8, name sd 0.8) and reaches 100%
-power from 480 CVs. Mistral 7B via Ollama reacted much more to individual names (residual sd
-5.9, name sd 2.7), and the simulation showed that **the number of distinct names, not the
-number of CVs, limited the audit**: a first name keeps its own quirk whatever CV it is put
-on, so with 5 first names per group, adding CVs kept reusing the same few quirks.
-
-Power to detect a 2-point gap for Mistral 7B (100 simulations each):
-
-| Profiles per job | CVs | 5 first names per group | 12 first names per group |
-|---|---|---|---|
-| 5 | 480 | 64% | 76% |
-| 10 | 960 | 62% | **90%** |
-| 20 | 1,920 | 74% | 93% |
-
-The name pool was therefore enlarged (see [Names](#names)), and the audits use 10 profiles
-per job (960 CVs).
-
-## Names
-
-First names are the 12 most frequent names given in France to children born 1985–2000
-(people aged about 25–40, a plausible candidate age) in each group, according to the
-[INSEE first-names file](https://www.insee.fr/fr/statistiques/8595130), among names typical
-of the group. Names widely given across groups (e.g. *Sarah*, *Inès*, *Myriam*, *Issa*) are
-excluded, since they would weaken the origin signal. Every name was given at least 425
-times in that period; `scripts/check_first_names.py` re-checks this against the INSEE file.
-INSEE does not publish surnames, so the 10 surnames per group are common surnames associated
-with each group.
 
 ## Development
 
 ```bash
-uv run pytest          # tests + coverage
-uv run ruff check .    # lint
-uv run mypy src tests  # strict type checking
+uv run pytest                     # tests and coverage
+uv run ruff check . && uv run ruff format --check .
+uv run mypy src tests scripts     # strict type checking
 ```
 
-## Design decisions
+The same checks run on every push (GitHub Actions).
 
-The main choices behind the audit, the alternatives considered and the trade-offs accepted
-are recorded in [docs/decisions.md](docs/decisions.md).
+## Limitations
 
-## Roadmap
-
-- [x] Matched CV generator (factorial design)
-- [x] Model backends: local models (Ollama), Mistral API and Gemini API, with mocked tests
-- [x] Three prompt wordings
-- [x] Analysis: fixed-effects regression with two-way name-clustered errors, cluster bootstrap,
-      Holm correction, refusal rates, ceiling check
-- [x] Validation: recover a planted bias from the mock model
-- [x] Power analysis: how many CVs are needed to detect a given effect
-- [x] Larger name pool, checked against INSEE data
-- [x] Audits of real models: Mistral 7B (local) and open-mistral-nemo (API)
-- [x] Robustness by prompt and job (`robustness` command)
-- [x] Intersectional effects (gender × origin)
-- [x] Results write-up and policy brief
-- [ ] More models: a widely deployed frontier model (e.g. GPT, Gemini, Claude) via a paid API
+- Names and addresses signal *perceived* group membership; they say nothing about real people.
+- Two open-weight models from one provider, chosen because both could be run for free. The audit
+  does not show how the frontier models most used in industry behave; the Gemini backend is ready
+  for that extension.
+- Four jobs in the Paris region, one answer per question at temperature 0.7. A 1–100 score is not
+  a hiring decision: real tools may rank, filter or summarise instead.
+- Origin effects rest on 10 surnames per group (30 clusters), so their intervals may be slightly
+  too narrow ([decision 10](docs/decisions.md#10-ols-with-profile-fixed-effects-errors-clustered-by-name)).
 
 ## Related work
 
-- Bertrand & Mullainathan (2004), *Are Emily and Greg More Employable than Lakisha and
-  Jamal?* The original correspondence study of hiring discrimination.
+- Bertrand & Mullainathan (2004), [*Are Emily and Greg More Employable than Lakisha and
+  Jamal?*](https://doi.org/10.1257/0002828042002561) The original correspondence study of hiring
+  discrimination.
 - Armstrong et al. (2024), [*The Silicon Ceiling: Auditing GPT's Race and Gender Biases in
-  Hiring*](https://arxiv.org/abs/2405.04412). Inspired the three prompt wordings; they model
-  name-level variation with a random effect, which this project handles by clustering.
+  Hiring*](https://arxiv.org/abs/2405.04412). Source of the three prompt wordings.
 - Wilson & Caliskan (2024), [*Gender, Race, and Intersectional Bias in Resume Screening via
   Language Model Retrieval*](https://arxiv.org/abs/2407.20371).
 - Tamkin et al. (2023), [*Evaluating and Mitigating Discrimination in Language Model
   Decisions*](https://arxiv.org/abs/2312.03689).
-- Human recruiters in France: the DARES / ISM Corum testing campaigns, and the
+- Human recruiters in France: the DARES / ISM Corum testing campaigns and the
   [IPP policy brief](https://www.ipp.eu/en/news/discrimination-in-hiring-in-france-findings-and-courses-of-action)
-  on discrimination in hiring.
+  on hiring discrimination.
 
-Most existing LLM audits use English CVs and US names. This project focuses on French,
-on the origin groups relevant to the French labour market, and on place of residence.
+## Author
 
-## Limitations
-
-Names and addresses are *signals of perceived* group membership, not identities. The
-results describe how a model reacts to these signals in this specific setting.
-
-The audit covers two open-weight models from one provider, Mistral, because both could
-be run for free. It shows that models from the same provider can behave differently, but
-it does not tell how the frontier models most used in industry behave; the Gemini backend
-and the rest of the pipeline are ready for that extension.
+Lounès Le Fur, MSc Artificial Intelligence and Society (ENS-PSL / Dauphine-PSL).
