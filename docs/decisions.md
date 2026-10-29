@@ -14,7 +14,7 @@ Each entry ends with the trade-off accepted, because every choice gave something
 | 7 | [Two free Mistral models](#7-two-mistral-models-run-for-free) | Feasible at zero cost; frontier models left out |
 | 8 | [Shuffled, resumable runs that keep refusals](#8-shuffled-resumable-runs-that-keep-refusals) | Long runs must not bias or lose data |
 | 9 | [Strict score parsing](#9-strict-score-parsing) | An unclear answer gets no score rather than a guess |
-| 10 | [OLS with fixed effects, clustered by name](#10-ols-with-profile-fixed-effects-errors-clustered-by-name) | Simple, assumption-light estimation |
+| 10 | [OLS with fixed effects, clustered by name](#10-ols-with-profile-fixed-effects-errors-clustered-by-name) | Simple, assumption-light estimation; revised to two-way clustering |
 | 11 | [Holm correction](#11-holm-correction-for-multiple-testing) | Control false alarms across all tests reported together |
 | 12 | [Sample size from a simulation](#12-sample-size-chosen-by-simulation-before-the-audit) | Decide how many CVs before spending hours of compute |
 | 13 | [Validate on a planted bias first](#13-validate-the-pipeline-on-a-planted-bias-first) | Prove the method finds a known truth |
@@ -154,7 +154,7 @@ how many.
 
 **Decision.** For each model, regress the score on dummies for female, Maghrebi, sub-Saharan
 and deprived address, with profile and prompt fixed effects. Standard errors are clustered by
-full name. A cluster bootstrap over profiles (500 resamples) gives a second interval.
+first name and by surname (see "Revised" below). A cluster bootstrap over profiles (500 resamples) gives a second interval.
 
 **Alternatives.** A mixed model with a random effect per name (as in *The Silicon Ceiling*);
 plain OLS errors.
@@ -166,10 +166,21 @@ quirk, so they are not independent; plain errors would be too narrow.
 **Trade-off.** The score is treated as a continuous number, although it is bounded and bunches
 near the top (18% of Mistral 7B scores are 90 or above).
 
-**Open question.** A first name appears with several surnames, so scores may also be correlated
-within a first name. Clustering by full name does not capture that. Two-way clustering
-(first name and surname) is a check worth running; with 12 first names per group the intervals
-could widen.
+**Revised (two-way clustering).** The first version clustered by full name. But a first name
+appears with several surnames, so its quirk is shared across those pairings, and clustering by
+full name misses that. Errors are now clustered two ways, by first name and by surname. This was
+decided on the structure of the data before looking at how it changed the results, and adopted
+whatever it showed. A test checks that two-way intervals are wider when names have strong
+quirks.
+
+On the real audits, standard errors moved by about ±15%, in both directions, and no pooled
+conclusion changed. Within subgroups, the intervals mostly narrowed: the Mistral 7B sub-Saharan
+penalty became significant in 7 of 7 subsets (from 6) and the NeMo female premium in 6 of 7
+(from 3). Subgroup counts are therefore reported with both versions. The full-name version remains available (`clustering="full_name"`) for comparison.
+
+**Remaining caveat.** Origin is constant within a surname, so origin effects are estimated from
+only 10 surnames per group (30 surname clusters). Cluster-robust errors can be unreliable with so
+few clusters; a wild cluster bootstrap would be the stricter check.
 
 ## 11. Holm correction for multiple testing
 
@@ -184,7 +195,7 @@ Bonferroni. A first robustness check corrected within each subgroup separately a
 two claims; correcting across all 28 tests fixed it.
 
 **Trade-off.** Less power for small effects in subgroups: Mistral NeMo's female premium is positive
-in all 7 subgroups but significant in only 3.
+in all 7 subgroups but significant in only 6 (only 3 under the earlier full-name clustering).
 
 ## 12. Sample size chosen by simulation before the audit
 

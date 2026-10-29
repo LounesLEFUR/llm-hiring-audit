@@ -11,15 +11,16 @@ identical except for the candidate's name and address, and test whether its scor
 
 960 matched CVs × 3 prompt wordings = 2,880 scores per model, on a 1–100 scale. Effects are
 in score points relative to a male candidate with a majority French name living in central
-Paris, with profile and prompt fixed effects, name-clustered 95% confidence intervals, and
+Paris, with profile and prompt fixed effects, 95% confidence intervals clustered by first name
+and surname, and
 Holm-corrected significance (\*).
 
 | Effect | Mistral 7B (local, Ollama) | open-mistral-nemo (Mistral API) |
 |---|---|---|
-| Female | **+2.43** [1.94, 2.92]\* | **+1.21** [0.80, 1.62]\* |
-| Maghrebi-sounding name | **−0.94** [−1.54, −0.35]\* | −0.16 [−0.69, 0.36] |
-| Sub-Saharan-sounding name | **−2.02** [−2.66, −1.39]\* | +0.01 [−0.51, 0.54] |
-| Deprived-area address | **−1.09** [−1.55, −0.63]\* | +0.21 [−0.22, 0.64] |
+| Female | **+2.43** [1.89, 2.97]\* | **+1.21** [0.86, 1.56]\* |
+| Maghrebi-sounding name | **−0.94** [−1.46, −0.43]\* | −0.16 [−0.68, 0.35] |
+| Sub-Saharan-sounding name | **−2.02** [−2.60, −1.44]\* | +0.01 [−0.54, 0.57] |
+| Deprived-area address | **−1.09** [−1.60, −0.59]\* | +0.21 [−0.20, 0.62] |
 | Unparseable answers | 0.5% (no group difference) | 0.1% (no group difference) |
 
 - **Two models from the same provider behave very differently.** Mistral 7B penalises
@@ -29,18 +30,19 @@ Holm-corrected significance (\*).
 - **Both models favour women**, by +2.4 and +1.2 points.
 - **The main effects are not driven by one prompt or one job** (`llm-hiring-audit
   robustness`, Holm correction across all 28 subgroup tests). For Mistral 7B, the female
-  premium is significant in all 7 subsets (3 prompt wordings, 4 jobs) and the sub-Saharan
-  penalty in 6 of 7 (in accounting it is −1.9 points, p = 0.07 after correction). For
-  open-mistral-nemo, the female premium is positive in all 7 subsets (+0.8 to +1.8) but
-  significant in only 3: a 1-point effect is too small to confirm within each subset alone.
-  One subset result runs against the pooled pattern (nemo, payroll jobs: deprived address
-  −1.15, significant); with 28 tests it is treated as exploratory.
+  premium and the sub-Saharan penalty are significant in all 7 subsets (3 prompt wordings,
+  4 jobs). For open-mistral-nemo, the female premium is positive in all 7 subsets (+0.8 to
+  +1.8) and significant in 6. Subset results are less certain than the pooled ones: each
+  subset has fewer name clusters, and with the earlier full-name clustering these counts
+  were lower (sub-Saharan 6 of 7, nemo female 3 of 7). One subset result runs against the
+  pooled pattern (nemo, payroll jobs: deprived address −1.15, significant); with 28 tests it
+  is treated as exploratory.
 - **For Mistral 7B, the female premium goes mostly to women with majority French names**
   (`llm-hiring-audit intersectional`). Relative to a man with a majority name: women with
   a majority name +3.3, Maghrebi-sounding names +1.9, sub-Saharan-sounding names +0.5 (not
   significant); men with sub-Saharan-sounding names −1.2. The sub-Saharan penalty looks
   larger for women than for men (interaction −1.6 points), but this is borderline after
-  correction (p = 0.054) and is reported as suggestive. For open-mistral-nemo the female
+  correction (p = 0.071) and is reported as suggestive. For open-mistral-nemo the female
   premium is similar for every origin (+1.0 to +1.2) and no interaction is detected.
 - Every result is confirmed by the cluster bootstrap (see
   [`results/2026-10/`](results/2026-10/)), which also contains the raw scores needed to
@@ -140,8 +142,9 @@ $$
 - **Profile fixed effects** ($\alpha$) compare each CV only with the other versions of the
   same profile, so differences in qualifications cannot contaminate the estimates.
 - **Prompt fixed effects** ($\gamma$) absorb level differences between the three wordings.
-- **Standard errors clustered by name**: all scores of one name share that name's own
-  effect, so treating them as independent would make confidence intervals too narrow.
+- **Standard errors clustered by first name and by surname** (two-way): all scores of one
+  first name share that name's own effect, whatever surname it is paired with, and likewise
+  for surnames, so treating them as independent would make confidence intervals too narrow.
 - **Cluster bootstrap over profiles** gives a second confidence interval that does not rely
   on the regression's distributional assumptions.
 - **Holm correction** controls the family-wise error rate across the effects tested together.
@@ -158,13 +161,16 @@ addresses (so about −1.33 on average for the deprived area). 480 CVs × 3 prom
 
 | Effect | Truth | Estimate [95% CI] | Significant (Holm) |
 |---|---|---|---|
-| Maghrebi-sounding name | −6 | −5.57 [−6.24, −4.89] | yes |
-| Deprived-area address | ≈ −1.33 | −1.58 [−2.17, −0.99] | yes |
-| Female | 0 | 0.56 [−0.01, 1.12] | no |
-| Sub-Saharan-sounding name | 0 | 0.23 [−0.45, 0.92] | no |
+| Maghrebi-sounding name | −6 | −5.57 [−6.27, −4.86] | yes |
+| Deprived-area address | ≈ −1.33 | −1.58 [−2.28, −0.89] | yes |
+| Female | 0 | 0.56 [0.06, 1.05] | no (p = 0.056 after Holm) |
+| Sub-Saharan-sounding name | 0 | 0.23 [−0.29, 0.76] | no |
 
 Both planted effects are detected with the truth inside the interval, and no effect is
-found where none was planted. These properties are checked automatically in
+found where none was planted after the Holm correction. The uncorrected interval for
+"female" just misses zero: a reminder that a single 95% interval misses the truth 5% of the
+time, and that with only 30 surname clusters, cluster-robust intervals may be slightly too
+narrow (see [decision 10](docs/decisions.md#10-ols-with-profile-fixed-effects-errors-clustered-by-name)). These properties are checked automatically in
 `tests/test_analysis.py`.
 
 ## Power analysis
@@ -223,7 +229,7 @@ are recorded in [docs/decisions.md](docs/decisions.md).
 - [x] Matched CV generator (factorial design)
 - [x] Model backends: local models (Ollama), Mistral API and Gemini API, with mocked tests
 - [x] Three prompt wordings
-- [x] Analysis: fixed-effects regression with name-clustered errors, cluster bootstrap,
+- [x] Analysis: fixed-effects regression with two-way name-clustered errors, cluster bootstrap,
       Holm correction, refusal rates, ceiling check
 - [x] Validation: recover a planted bias from the mock model
 - [x] Power analysis: how many CVs are needed to detect a given effect

@@ -7,15 +7,19 @@ Main specification (one model at a time):
 
 - Profile fixed effects compare each CV only with the other versions of
   the same profile, so differences in qualifications cannot bias the b's.
-- Standard errors are clustered by name: all scores of one name share
-  that name's idiosyncratic effect, so they are not independent draws.
-  Ignoring this would make confidence intervals too narrow.
+- Standard errors are clustered two ways, by first name and by surname.
+  All scores of one first name share that name's quirk, whatever surname
+  it is paired with (and likewise for surnames), so they are not
+  independent draws. Ignoring this would make confidence intervals too
+  narrow. Clustering by full name only would miss the sharing across
+  pairings.
 - A cluster bootstrap over profiles gives a second, assumption-light
   confidence interval as a robustness check.
 - p-values are Holm-corrected, since several effects are tested at once.
 """
 
 from dataclasses import dataclass
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -57,13 +61,33 @@ def _formula(df: pd.DataFrame) -> str:
     return "score ~ " + " + ".join(rhs)
 
 
-def estimate_effects(df: pd.DataFrame, alpha: float = 0.05) -> pd.DataFrame:
+Clustering = Literal["two_way", "full_name"]
+
+
+def _fit_clustered(formula: str, df: pd.DataFrame, clustering: Clustering) -> Any:
+    """OLS with cluster-robust standard errors.
+
+    "two_way" clusters by first name and by surname at the same time (the
+    main specification); "full_name" clusters by the whole name only, as a
+    comparison.
+    """
+    if clustering == "two_way":
+        first = pd.factorize(df["first_name"])[0]
+        last = pd.factorize(df["last_name"])[0]
+        groups = np.column_stack([first, last])
+    else:
+        groups = pd.factorize(df["name"])[0]
+    return smf.ols(formula, data=df).fit(cov_type="cluster", cov_kwds={"groups": groups})
+
+
+def estimate_effects(
+    df: pd.DataFrame, alpha: float = 0.05, clustering: Clustering = "two_way"
+) -> pd.DataFrame:
     """Treatment effects in score points, with name-clustered inference.
 
     `df` must come from `prepare` and contain a single model.
     """
-    names = pd.factorize(df["name"])[0]
-    fit = smf.ols(_formula(df), data=df).fit(cov_type="cluster", cov_kwds={"groups": names})
+    fit = _fit_clustered(_formula(df), df, clustering)
     terms = list(TREATMENT_DUMMIES)
     ci = fit.conf_int(alpha=alpha).loc[terms]
     table = pd.DataFrame(
@@ -86,7 +110,10 @@ SUBGROUP_COLUMNS = ("prompt_id", "job_id")
 
 
 def subgroup_effects(
-    df: pd.DataFrame, by: tuple[str, ...] = SUBGROUP_COLUMNS, alpha: float = 0.05
+    df: pd.DataFrame,
+    by: tuple[str, ...] = SUBGROUP_COLUMNS,
+    alpha: float = 0.05,
+    clustering: Clustering = "two_way",
 ) -> pd.DataFrame:
     """Re-estimate the effects within each prompt wording and each job.
 
@@ -101,7 +128,8 @@ def subgroup_effects(
     tables = []
     for column in by:
         for value, sub in df.groupby(column):
-            table = estimate_effects(sub, alpha=alpha).drop(columns=["p_holm", "significant"])
+            table = estimate_effects(sub, alpha=alpha, clustering=clustering)
+            table = table.drop(columns=["p_holm", "significant"])
             tables.append(table.assign(subgroup=column, value=str(value)))
     result = pd.concat(tables, ignore_index=True)
     result["p_holm"] = multipletests(result["p_value"], alpha=alpha, method="holm")[1]
@@ -123,21 +151,22 @@ INTERSECTIONAL_ROWS = [
 ]
 
 
-def intersectional_effects(df: pd.DataFrame, alpha: float = 0.05) -> pd.DataFrame:
+def intersectional_effects(
+    df: pd.DataFrame, alpha: float = 0.05, clustering: Clustering = "two_way"
+) -> pd.DataFrame:
     """Gap of each gender x origin group, and whether origin penalties differ by gender.
 
     The main model assumes the effects simply add up: a sub-Saharan woman
     would get the female premium plus the sub-Saharan penalty. Here we add
     two interaction terms (female x maghrebi, female x subsaharan). If an
     interaction is non-zero, the origin effect is different for women and
-    for men. Inference is clustered by name, as in `estimate_effects`.
+    for men. Inference is clustered as in `estimate_effects`.
     """
     df = df.copy()
     df["female_x_maghrebi"] = df["female"] * df["maghrebi"]
     df["female_x_subsaharan"] = df["female"] * df["subsaharan"]
     formula = _formula(df) + " + female_x_maghrebi + female_x_subsaharan"
-    names = pd.factorize(df["name"])[0]
-    fit = smf.ols(formula, data=df).fit(cov_type="cluster", cov_kwds={"groups": names})
+    fit = _fit_clustered(formula, df, clustering)
 
     rows = []
     for label, combination in INTERSECTIONAL_ROWS:
